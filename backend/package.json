@@ -1,0 +1,44 @@
+{
+  "name": "ping-website",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "nodemon --exec tsx src/index.ts",
+    "migrate:create": "node-pg-migrate --migration-file-language ts create",
+    "migrate:up": "tsx node_modules/node-pg-migrate/bin/node-pg-migrate up",
+    "migrate:down": "tsx node_modules/node-pg-migrate/bin/node-pg-migrate down"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.5.0",
+    "@types/nodemailer": "^7.0.11",
+    "@types/pg": "^8.18.0",
+    "jsonwebtoken": "^9.0.3",
+    "node-pg-migrate": "^8.0.4",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@bull-board/api": "6.20.6",
+    "@bull-board/express": "6.20.6",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.71.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.3.1",
+    "dotenv-config": "^0.1.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "nodemailer": "^8.0.3",
+    "pg": "^8.20.0"
+  }
+}
