@@ -19,7 +19,7 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
         try {
             const userId = String((req as CustomRequest).user?.id);
             const id = String(req.params.id);
-            const limit = Math.min(parseInt(String(req.query.limit || "")) || 50, 200);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 50, 2000);
 
             const checks = await dashboardModel.getRecentChecks(id, userId, limit);
             if (checks === null) {
@@ -65,5 +65,47 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
         } catch (error) {
             console.error("[Dashboard] getIncidents error:", error);
             res.status(500).json({ success: false, message: "Failed to fetch incidents." });
+        }
+    }
+
+    // GET /api/dashboard/global-checks?limit=50
+    export const getGlobalChecks = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 50, 2000);
+
+            const checks = await dashboardModel.getGlobalRecentChecks(userId, limit);
+            res.json({ success: true, data: checks });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalChecks error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global check logs." });
+        }
+    }
+
+    // GET /api/dashboard/global-stats?days=30
+    export const getGlobalStats = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const days = Math.min(parseInt(String(req.query.days || "")) || 30, 90);
+
+            const stats = await dashboardModel.getGlobalStats(userId, days);
+            res.json({ success: true, data: stats });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalStats error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global stats." });
+        }
+    }
+
+    // GET /api/dashboard/global-incidents?limit=20
+    export const getGlobalIncidents = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 20, 100);
+
+            const incidents = await dashboardModel.getGlobalIncidents(userId, limit);
+            res.json({ success: true, data: incidents });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalIncidents error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global incidents." });
         }
     }

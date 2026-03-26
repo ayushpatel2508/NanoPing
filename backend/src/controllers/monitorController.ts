@@ -21,7 +21,7 @@ export const createMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    const { name, url, check_interval = 5, alert_threshold = 3 } = req.body;
+    const { name, url, check_interval = 3, alert_threshold = 3 } = req.body;
 
     if (!name || name.length < 1 || name.length > 100) {
       res.status(400).json({ status: "error", message: "Name must be between 1 and 100 characters" });
@@ -33,8 +33,8 @@ export const createMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    if (check_interval < 1 || check_interval > 60) {
-      res.status(400).json({ status: "error", message: "Check interval must be between 1 and 60 minutes" });
+    if (check_interval < 3 || check_interval > 60) {
+      res.status(400).json({ status: "error", message: "Check interval must be between 3 and 60 minutes" });
       return;
     }
 
@@ -123,8 +123,8 @@ export const updateMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    if (check_interval !== undefined && (check_interval < 1 || check_interval > 60)) {
-       res.status(400).json({ status: "error", message: "Check interval must be between 1 and 60 minutes" });
+    if (check_interval !== undefined && (check_interval < 3 || check_interval > 60)) {
+       res.status(400).json({ status: "error", message: "Check interval must be between 3 and 60 minutes" });
        return;
     }
 

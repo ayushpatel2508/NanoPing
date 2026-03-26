@@ -106,19 +106,27 @@ export const login=async(req:Request,res:Response): Promise<void>=>{
         await userModel.updateRefreshToken(user_exist.id, refreshToken);
 
         // 4. Set both tokens in HTTP-Only Cookies
-        res.cookie("accessToken", accessToken, {
-          httpOnly: true, 
+        const cookieOptions: any = {
+          httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "strict", 
-          maxAge: 15 * 60 * 1000 // 15 mins
+          sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+          path: "/"
+        };
+
+        // Access token: 24h in dev, 15m in prod
+        const accessMaxAge = process.env.NODE_ENV === "production" ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+        
+        res.cookie("accessToken", accessToken, {
+          ...cookieOptions,
+          maxAge: accessMaxAge
         });
 
         res.cookie("refreshToken", refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
+          ...cookieOptions,
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
+
+        console.log(`[AUTH] User ${user_exist.email} logged in successfully. Cookies set.`);
 
         // 5. Send ONE JSON response
         res.status(200).json({
@@ -208,19 +216,26 @@ export const clerkSync = async (req: Request, res: Response): Promise<void> => {
 
     await userModel.updateRefreshToken(user.id, refreshToken);
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true, 
+    const cookieOptions: any = {
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict", 
-      maxAge: 15 * 60 * 1000 // 15 mins
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/"
+    };
+
+    const accessMaxAge = process.env.NODE_ENV === "production" ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+
+    res.cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: accessMaxAge
     });
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
+
+    console.log(`[AUTH] Clerk user ${user.email} synced successfully.`);
 
     res.status(200).json({
       status: "success", 

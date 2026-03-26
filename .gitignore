@@ -1,0 +1,26 @@
+# Logs
+*.log
+*.txt
+
+# Dependencies
+node_modules/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Environment
+.env
+.env.*
+
+# Documentation and Tasks
+*.md
+
+# Project specific
+directives/
+execution/
+scripts/
+seed*
+postgres-data/
+.tmp/

@@ -81,5 +81,6 @@ export const startDataPurge = () => {
         console.log(`[PurgeJob] Data purge scheduled for 1:00 AM (in ${Math.round(msUntilOneAm / 60000)} mins).`);
     };
 
+    
     scheduleNextRun();
 };
