@@ -1,11 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  // Use VITE_API_URL if defined, otherwise fallback to '/api' for proxy/relative use
+  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Send cookies with every request
+  withCredentials: true,
 });
 
 api.interceptors.response.use(

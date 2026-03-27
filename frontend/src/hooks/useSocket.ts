@@ -6,7 +6,10 @@ export const useSocket = (monitorId?: string) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const s = io({
+    // Connect to the API URL if provided, otherwise default to current origin
+    const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    
+    const s = io(socketUrl, {
       path: '/socket.io',
       withCredentials: true,
       transports: ['websocket', 'polling']
