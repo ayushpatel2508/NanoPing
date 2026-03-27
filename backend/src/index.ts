@@ -43,7 +43,13 @@ app.use("/api/monitors", monitorRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 const server = httpServer.listen(process.env.PORT, () => {
-    console.log(`Server is running on port ${process.env.PORT}`);
+    const mode = process.env.NODE_ENV || 'development';
+    console.log(` NanoPing Server is running on port ${process.env.PORT} in ${mode.toUpperCase()} mode`);
+    
+    if (mode === 'production') {
+        console.log(" Production security features (Secure Cookies, Strict CORS) are ENABLED.");
+    }
+
     startScheduler();           // 1-minute ping cron
     startNightlyAggregation();  // Midnight stats aggregation
     startDataPurge();           // 1 AM data purge
