@@ -1,4 +1,4 @@
-import pool from "../../config/db.js";
+import pool from "../config/db.js";
 
 // Interface for what we get back from the DB
 export interface User {

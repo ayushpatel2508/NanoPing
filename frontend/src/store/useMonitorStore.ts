@@ -16,6 +16,12 @@ interface MonitorState {
   fetchGlobalData: () => Promise<void>;
   createMonitor: (data: any) => Promise<boolean>;
   deleteMonitor: (id: string) => Promise<boolean>;
+  
+  // Real-time WebSocket updates
+  updateMonitorStatus: (data: any) => void;
+  addGlobalCheck: (check: any) => void;
+  addGlobalIncident: (incident: any) => void;
+  resolveGlobalIncident: (data: any) => void;
 }
 
 export const useMonitorStore = create<MonitorState>((set, get) => ({
@@ -42,7 +48,7 @@ export const useMonitorStore = create<MonitorState>((set, get) => ({
   fetchSummary: async () => {
     try {
       const res = await dashboardApi.getSummaryStats();
-      if (res.status === 'success') {
+      if (res.success) {
         set({ summaryStats: res.data });
       }
     } catch (err: any) {
@@ -94,5 +100,69 @@ export const useMonitorStore = create<MonitorState>((set, get) => ({
       set({ error: err.response?.data?.message || 'Failed to delete monitor', isLoading: false });
       return false;
     }
+  },
+
+  updateMonitorStatus: (data: any) => {
+    set((state) => {
+      const monitor = state.monitors.find(m => m.id === data.monitorId);
+      if (!monitor) return {
+        monitors: state.monitors.map((m) =>
+          m.id === data.monitorId
+            ? { ...m, last_status: data.last_status, consecutive_failures: data.consecutive_failures }
+            : m
+        )
+      };
+
+      const oldStatus = monitor.last_status;
+      const newStatus = data.last_status;
+
+      let newSummary = state.summaryStats;
+      if (newSummary && oldStatus !== newStatus && monitor.is_active) {
+        newSummary = { ...newSummary };
+        if (oldStatus === 'up') newSummary.monitors_up = (Math.max(0, parseInt(newSummary.monitors_up) - 1)).toString();
+        if (oldStatus === 'down') newSummary.monitors_down = (Math.max(0, parseInt(newSummary.monitors_down) - 1)).toString();
+        
+        if (newStatus === 'up') newSummary.monitors_up = (parseInt(newSummary.monitors_up) + 1).toString();
+        if (newStatus === 'down') newSummary.monitors_down = (parseInt(newSummary.monitors_down) + 1).toString();
+      }
+
+      return {
+        monitors: state.monitors.map((m) =>
+          m.id === data.monitorId
+            ? { ...m, last_status: newStatus, consecutive_failures: data.consecutive_failures }
+            : m
+        ),
+        summaryStats: newSummary
+      };
+    });
+  },
+
+  addGlobalCheck: (check: any) => {
+    set((state) => ({
+      globalChecks: [check, ...state.globalChecks].slice(0, 50),
+    }));
+  },
+
+  addGlobalIncident: (incident: any) => {
+    set((state) => ({
+      globalIncidents: [incident, ...state.globalIncidents].slice(0, 20),
+    }));
+  },
+
+  resolveGlobalIncident: (data: any) => {
+    set((state) => ({
+      globalIncidents: state.globalIncidents.map((inc) =>
+        inc.id === data.incidentId
+          ? {
+              ...inc,
+              is_resolved: true,
+              resolved_at: data.resolved_at,
+              duration_seconds: Math.floor(
+                (new Date(data.resolved_at).getTime() - new Date(inc.started_at).getTime()) / 1000
+              ),
+            }
+          : inc
+      ),
+    }));
   }
 }));

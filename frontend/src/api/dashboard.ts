@@ -17,8 +17,8 @@ export const dashboardApi = {
     const response = await api.get(`/dashboard/${id}/incidents?limit=${limit}`);
     return response.data;
   },
-  getGlobalChecks: async (limit = 50) => {
-    const response = await api.get(`/dashboard/global-checks?limit=${limit}`);
+  getGlobalChecks: async (page = 1, limit = 20) => {
+    const response = await api.get(`/dashboard/global-checks?page=${page}&limit=${limit}`);
     return response.data;
   },
   getGlobalStats: async (days = 30) => {
@@ -27,6 +27,10 @@ export const dashboardApi = {
   },
   getGlobalIncidents: async (limit = 20) => {
     const response = await api.get(`/dashboard/global-incidents?limit=${limit}`);
+    return response.data;
+  },
+  getAllMonitorStats: async (days = 30) => {
+    const response = await api.get(`/dashboard/all-monitor-stats?days=${days}`);
     return response.data;
   }
 };

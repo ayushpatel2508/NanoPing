@@ -1,6 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import redisConnection from "../config/redis.js";
-import  pool  from "../../config/db.js";
+import  pool  from "../config/db.js";
 
 import { sendEmail } from "../utils/sendEmail.js";
 

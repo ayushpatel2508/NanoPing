@@ -1,4 +1,4 @@
-import pool from "../../config/db.js";
+import pool from "../config/db.js";
 
 export const dashboardModel = {
 
@@ -81,17 +81,28 @@ export const dashboardModel = {
         return result.rows;
     },
 
-    // 5. GET /api/dashboard/global-checks — Global recent checks across all monitors
-    getGlobalRecentChecks: async (userId: string, limit: number = 50) => {
-        const result = await pool.query(`
-            SELECT c.id, c.status, c.status_code, c.response_time, c.checked_at, c.monitor_id, c.message, m.name as monitor_name
-            FROM checks c
-            JOIN monitors m ON c.monitor_id = m.id
-            WHERE m.user_id = $1
-            ORDER BY c.checked_at DESC
-            LIMIT $2
-        `, [userId, limit]);
-        return result.rows;
+    // 5. GET /api/dashboard/global-checks — Global recent checks across all monitors (paginated)
+    getGlobalRecentChecks: async (userId: string, limit: number = 20, offset: number = 0) => {
+        const [dataResult, countResult] = await Promise.all([
+            pool.query(`
+                SELECT c.id, c.status, c.status_code, c.response_time, c.checked_at, c.monitor_id, c.message, m.name as monitor_name
+                FROM checks c
+                JOIN monitors m ON c.monitor_id = m.id
+                WHERE m.user_id = $1
+                ORDER BY c.checked_at DESC
+                LIMIT $2 OFFSET $3
+            `, [userId, limit, offset]),
+            pool.query(`
+                SELECT COUNT(*) AS total
+                FROM checks c
+                JOIN monitors m ON c.monitor_id = m.id
+                WHERE m.user_id = $1
+            `, [userId])
+        ]);
+        return {
+            checks: dataResult.rows,
+            total: parseInt(countResult.rows[0].total)
+        };
     },
 
     // 6. GET /api/dashboard/global-stats — Global stats aggregated logic or all stats
@@ -133,6 +144,19 @@ export const dashboardModel = {
             ORDER BY i.started_at DESC
             LIMIT $2
         `, [userId, limit]);
+        return result.rows;
+    },
+
+    // 8. GET /api/dashboard/all-monitor-stats — Stats for all monitors (not aggregated)
+    getAllMonitorStats: async (userId: string, days: number = 30) => {
+        const result = await pool.query(`
+            SELECT ms.monitor_id, ms.day, ms.uptime_percentage, ms.avg_response_time, ms.total_checks
+            FROM monitor_stats ms
+            JOIN monitors m ON ms.monitor_id = m.id
+            WHERE m.user_id = $1
+              AND ms.day >= CURRENT_DATE - ($2 || ' days')::INTERVAL
+            ORDER BY ms.monitor_id, ms.day ASC
+        `, [userId, days]);
         return result.rows;
     }
 };

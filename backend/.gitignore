@@ -9,9 +9,14 @@ coverage/
 
 # Documentation, Tasks and Logs
 *.md
+CLAUDE.md
+GEMINI.md
+agents.md
 *.txt
 
 # Project specific
+.agent/
+.agents/
 directives/
 execution/
 scripts/

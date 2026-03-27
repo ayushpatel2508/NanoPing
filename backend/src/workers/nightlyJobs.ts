@@ -1,4 +1,4 @@
-import pool from "../../config/db.js";
+import pool from "../config/db.js";
 
 // Cron Job 1: Runs Every Night at Midnight
 // Aggregates the last 24 hours of raw 'checks' data into one clean row in 'monitor_stats'

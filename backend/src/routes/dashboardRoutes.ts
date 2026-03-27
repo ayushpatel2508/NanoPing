@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { isLoggedIn } from "../middlewares/isLoggedIn.js";
-import { getSummary, getRecentChecks, getMonitorStats, getIncidents, getGlobalChecks, getGlobalStats, getGlobalIncidents } from "../controllers/dashboardController.js";
+import { getSummary, getRecentChecks, getMonitorStats, getIncidents, getGlobalChecks, getGlobalStats, getGlobalIncidents, getAllMonitorStats } from "../controllers/dashboardController.js";
 
 const router = Router();
 
@@ -20,6 +20,9 @@ router.get("/global-stats", getGlobalStats);
 
 // Global incident history across monitors
 router.get("/global-incidents", getGlobalIncidents);
+
+// Detailed daily stats for all monitors
+router.get("/all-monitor-stats", getAllMonitorStats);
 
 // --- Per-monitor endpoints ---
 

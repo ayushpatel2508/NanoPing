@@ -1,5 +1,5 @@
 import { pingQueue } from "./queues.js";
-import pool  from "../../config/db.js";
+import pool  from "../config/db.js";
 
 // The Mastermind: Runs automatically every 60 seconds
 export const startScheduler = () => {

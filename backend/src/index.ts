@@ -17,7 +17,12 @@ import { startScheduler } from "./workers/scheduler.js";
 import { startNightlyAggregation, startDataPurge } from "./workers/nightlyJobs.js";
 import redisConnection from "./config/redis.js";
 
+import { createServer } from "http";
+import { initSocket } from "./config/socket.js";
+
 const app = express();
+const httpServer = createServer(app);
+const io = initSocket(httpServer);
 
 // Middleware
 app.use(cors({
@@ -37,7 +42,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/monitors", monitorRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
-const server = app.listen(process.env.PORT, () => {
+const server = httpServer.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
     startScheduler();           // 1-minute ping cron
     startNightlyAggregation();  // Midnight stats aggregation
@@ -49,6 +54,7 @@ const gracefulShutdown = async () => {
     console.log("Shutting down gracefully...");
     await pingWorker.close();
     await alertWorker.close();
+    io.close();
     redisConnection.quit();
     server.close(() => {
         console.log("Server successfully closed.");

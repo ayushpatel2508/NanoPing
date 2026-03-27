@@ -16,8 +16,13 @@ node_modules/
 
 # Documentation and Tasks
 *.md
+CLAUDE.md
+GEMINI.md
+agents.md
 
 # Project specific
+.agent/
+.agents/
 directives/
 execution/
 scripts/

@@ -1,256 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useSocket } from '../hooks/useSocket';
 import { monitorApi } from '../api/monitors';
 import { dashboardApi } from '../api/dashboard';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
-  PieChart,
-  Pie,
-  ReferenceLine,
-} from 'recharts';
-
-
-function formatDuration(seconds: number): string {
-  if (!seconds) return '—';
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
-}
-
-function formatDate(d: string | Date, short = false): string {
-  const date = new Date(d);
-  if (short) return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-// ─── Custom Tooltip for Recharts ────────────────────────────────
-const CustomTooltip = ({ active, payload, label, unit = '' }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-[#1a1c23] border border-white/10 rounded-xl px-4 py-3 shadow-2xl text-[13px]">
-      <p className="text-slate-400 mb-1.5 font-medium">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <div key={i} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-slate-300">{p.name}:</span>
-          <span className="font-bold text-white">{p.value}{unit}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ─── Response Time Chart ─────────────────────────────────────────
-function ResponseTimeChart({ data }: { data: any[] }) {
-  if (!data.length) {
-    return (
-      <div className="h-56 flex flex-col items-center justify-center text-slate-600 gap-3">
-        <span className="material-symbols-outlined text-4xl">show_chart</span>
-        <p className="text-sm">No response time data yet</p>
-      </div>
-    );
-  }
-
-  const chartData = data.map((d) => ({
-    date: formatDate(d.day, true),
-    'Avg Response': Math.round(d.avg_response_time || 0),
-  }));
-
-  const maxVal = Math.max(...chartData.map((d) => d['Avg Response']));
-  const avgVal = Math.round(chartData.reduce((a, d) => a + d['Avg Response'], 0) / chartData.length);
-
-  return (
-    <div>
-      <div className="flex items-center gap-6 mb-6 text-[13px]">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-          <span className="text-slate-400">Avg Response Time</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="material-symbols-outlined text-[16px] text-amber-400">info</span>
-          Peak: <span className="font-bold text-amber-400">{maxVal}ms</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="material-symbols-outlined text-[16px] text-sky-400">analytics</span>
-          Avg: <span className="font-bold text-sky-400">{avgVal}ms</span>
-        </div>
-      </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <defs>
-            <linearGradient id="rtGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}ms`} width={55} />
-          <Tooltip content={<CustomTooltip unit="ms" />} />
-          <ReferenceLine y={avgVal} stroke="#38bdf8" strokeDasharray="4 4" strokeOpacity={0.5} />
-          <Area
-            type="monotone"
-            dataKey="Avg Response"
-            stroke="#10b981"
-            strokeWidth={2.5}
-            fill="url(#rtGrad)"
-            dot={false}
-            activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// ─── Uptime Bar Chart ─────────────────────────────────────────────
-function UptimeBarChart({ data }: { data: any[] }) {
-  if (!data.length) {
-    return (
-      <div className="h-56 flex flex-col items-center justify-center text-slate-600 gap-3">
-        <span className="material-symbols-outlined text-4xl">bar_chart</span>
-        <p className="text-sm">No uptime data yet</p>
-      </div>
-    );
-  }
-
-  const chartData = data.map((d) => ({
-    date: formatDate(d.day, true),
-    Uptime: parseFloat(d.uptime_percentage || 0),
-    raw: d,
-  }));
-
-  const getBarColor = (val: number) => {
-    if (val >= 99) return '#10b981';
-    if (val >= 95) return '#f59e0b';
-    return '#ef4444';
-  };
-
-  return (
-    <div>
-      <div className="flex items-center gap-6 mb-6 text-[13px]">
-        <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /><span className="text-slate-400">≥ 99%</span></div>
-        <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-400" /><span className="text-slate-400">95–99%</span></div>
-        <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="text-slate-400">&lt; 95%</span></div>
-      </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} barCategoryGap="20%">
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis domain={[90, 100]} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={45} />
-          <Tooltip content={<CustomTooltip unit="%" />} />
-          <ReferenceLine y={99} stroke="#10b981" strokeDasharray="4 4" strokeOpacity={0.4} />
-          <Bar dataKey="Uptime" radius={[3, 3, 0, 0]}>
-            {chartData.map((entry, index) => (
-              <Cell key={index} fill={getBarColor(entry.Uptime)} fillOpacity={0.85} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// ─── Status Distribution Pie Chart ────────────────────────────────
-function StatusPieChart({ checks }: { checks: any[] }) {
-  const upCount = checks.filter((c) => c.status === 'up').length;
-  const downCount = checks.filter((c) => c.status === 'down').length;
-  const total = checks.length;
-
-  if (!total) {
-    return (
-      <div className="h-48 flex flex-col items-center justify-center text-slate-600 gap-3">
-        <span className="material-symbols-outlined text-4xl">donut_large</span>
-        <p className="text-sm">No check data yet</p>
-      </div>
-    );
-  }
-
-  const pieData = [
-    { name: 'Up', value: upCount, color: '#10b981' },
-    { name: 'Down', value: downCount, color: '#ef4444' },
-  ].filter((d) => d.value > 0);
-
-  return (
-    <div className="flex items-center gap-6">
-      <ResponsiveContainer width="50%" height={160}>
-        <PieChart>
-          <Pie
-            data={pieData}
-            cx="50%"
-            cy="50%"
-            innerRadius={45}
-            outerRadius={70}
-            paddingAngle={3}
-            dataKey="value"
-            strokeWidth={0}
-          >
-            {pieData.map((entry, index) => (
-              <Cell key={index} fill={entry.color} fillOpacity={0.9} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value: any) => [`${value} checks`, '']} contentStyle={{ background: '#1a1c23', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12 }} />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="flex-1 space-y-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-            <span className="text-[12px] text-slate-400">Successful checks</span>
-          </div>
-          <div className="text-2xl font-bold text-emerald-400">{upCount}</div>
-          <div className="text-[11px] text-slate-600">{total > 0 ? ((upCount / total) * 100).toFixed(1) : 0}% success rate</div>
-        </div>
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <span className="text-[12px] text-slate-400">Failed checks</span>
-          </div>
-          <div className="text-2xl font-bold text-red-400">{downCount}</div>
-          <div className="text-[11px] text-slate-600">{total > 0 ? ((downCount / total) * 100).toFixed(1) : 0}% failure rate</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Uptime Timeline (Heartbeat bars) ────────────────────────────
-function HeartbeatTimeline({ checks }: { checks: any[] }) {
-  const last90 = checks.slice(0, 90);
-  return (
-    <div className="flex items-end gap-[2.5px] h-9">
-      {Array.from({ length: 90 }).map((_, i) => {
-        const check = last90[i];
-        let colorClass = 'bg-slate-800/40';
-        if (check) colorClass = check.status === 'up' ? 'bg-emerald-500' : 'bg-red-500';
-        return (
-          <div
-            key={i}
-            className={`flex-1 rounded-[2px] ${colorClass} hover:opacity-70 transition-opacity relative group cursor-default`}
-            style={{ minWidth: 3 }}
-          >
-            {check && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#1a1c23] text-[11px] text-white px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-white/10 shadow-xl z-20">
-                <div className={`font-bold ${check.status === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>{check.status.toUpperCase()}</div>
-                <div className="text-slate-300">{check.response_time ? `${check.response_time}ms` : '—'} · {check.status_code || '—'}</div>
-                <div className="text-slate-500">{formatDate(check.checked_at)}</div>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import { 
+    ResponseTimeChart, 
+    UptimeBarChart, 
+    StatusPieChart, 
+    HeartbeatTimeline,
+    formatDuration,
+    formatDate
+} from '../components/Charts';
 
 // ─── TIME RANGE LOG FILTER ────────────────────────────────────────
 type TimeRange = '24h' | '3d' | '7d';
@@ -652,8 +412,53 @@ export default function MonitorDetail() {
   const [checks, setChecks] = useState<any[]>([]);
   const [stats, setStats] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'analytics' | 'settings'>('overview');
   const [loading, setLoading] = useState(true);
+
+  const { socket } = useSocket(id);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('check:new', (newCheck: any) => {
+      setChecks((prev) => [newCheck, ...prev]);
+    });
+
+    socket.on('monitor:status_update', (data: any) => {
+      setMonitor((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          last_status: data.last_status,
+          consecutive_failures: data.consecutive_failures
+        };
+      });
+    });
+
+    socket.on('incident:new', (newIncident: any) => {
+      setIncidents((prev) => [newIncident, ...prev]);
+    });
+
+    socket.on('incident:resolved', (resolvedData: any) => {
+      setIncidents((prev) => prev.map(inc => 
+        inc.id === resolvedData.incidentId 
+          ? { 
+              ...inc, 
+              is_resolved: true, 
+              resolved_at: resolvedData.resolved_at,
+              duration_seconds: Math.floor((new Date(resolvedData.resolved_at).getTime() - new Date(inc.started_at).getTime()) / 1000)
+            } 
+          : inc
+      ));
+    });
+
+    return () => {
+      socket.off('check:new');
+      socket.off('monitor:status_update');
+      socket.off('incident:new');
+      socket.off('incident:resolved');
+    };
+  }, [socket]);
 
   useEffect(() => {
     if (!id) return;
@@ -731,9 +536,10 @@ export default function MonitorDetail() {
     : '—';
 
   const TABS = [
-    { id: 'overview', label: 'Overview', icon: 'dashboard' },
-    { id: 'logs', label: 'Logs', icon: 'list_alt' },
-    { id: 'analytics', label: 'Analytics', icon: 'insights' },
+    { id: 'overview', label: 'Live Network', icon: 'settings_input_antenna' },
+    { id: 'logs', label: 'Incident Logs', icon: 'list_alt' },
+    { id: 'analytics', label: 'Uptime History', icon: 'insights' },
+    { id: 'settings', label: 'Configuration', icon: 'settings' },
   ] as const;
 
   return (
@@ -761,7 +567,7 @@ export default function MonitorDetail() {
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`}
             >
-              <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+              <span className={`w-2 h-2 rounded-full ${activeTab === tab.id ? 'bg-emerald-400 animate-pulse' : 'bg-slate-700'}`}></span>
               {tab.label}
               {tab.id === 'logs' && checks.length > 0 && (
                 <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-slate-400">{checks.length}</span>
@@ -798,7 +604,7 @@ export default function MonitorDetail() {
             <span className="text-slate-700">/</span>
             <span className="text-white truncate max-w-xs">{monitor.name}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={handleToggle}
               className="flex items-center gap-1.5 text-[12px] font-bold text-slate-300 bg-white/5 hover:bg-white/8 px-3 py-1.5 rounded-md border border-white/5 transition-all shadow-sm"
@@ -813,6 +619,14 @@ export default function MonitorDetail() {
               <span className="material-symbols-outlined text-[18px]">delete</span>
               <span className="hidden sm:inline">Delete</span>
             </button>
+            <div className="w-px h-6 bg-white/10 mx-1"></div>
+            <Link
+              to="/settings"
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-sm border border-emerald-500/30 hover:bg-emerald-500/30 transition-all cursor-pointer"
+              title="Settings & Profile"
+            >
+              U
+            </Link>
           </div>
         </header>
 
@@ -821,58 +635,41 @@ export default function MonitorDetail() {
           <div className="max-w-5xl mx-auto space-y-8">
 
             {/* Monitor Hero */}
-            <div className="flex items-center gap-6">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ring-1 shadow-lg ${
-                monitor.is_active
-                  ? monitor.last_status === 'up'
-                    ? 'bg-emerald-500/15 ring-emerald-500/30 text-emerald-400'
-                    : 'bg-red-500/15 ring-red-500/30 text-red-400'
-                  : 'bg-yellow-500/15 ring-yellow-500/30 text-yellow-400'
-              }`}>
-                <span className="material-symbols-outlined text-3xl">
-                  {monitor.is_active ? (monitor.last_status === 'up' ? 'language' : 'language_off') : 'pause_circle'}
-                </span>
+            <div className="flex items-center gap-4 border-b border-white/[0.06] pb-8 group/item">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover/item:scale-110 group-hover/item:bg-emerald-500/20 transition-all duration-300">
+                <span className="material-symbols-outlined text-emerald-400">api</span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap mb-1">
-                  <h1 className="text-2xl font-bold text-white tracking-tight truncate">{monitor.name}</h1>
-                  <span className={`text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-md border ${
-                    !monitor.is_active
-                      ? 'bg-yellow-500/15 text-yellow-400 border-yellow-500/20'
-                      : monitor.last_status === 'up'
-                        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20'
-                        : 'bg-red-500/15 text-red-400 border-red-500/20'
-                  }`}>
-                    {statusLabel}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 px-0.5">
-                  <span className="text-slate-400 text-[13px] truncate">{monitor.url}</span>
-                  <a href={monitor.url} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-emerald-400 transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                  </a>
-                </div>
+                <h3 className="text-xl font-bold text-white tracking-tight group-hover/item:text-emerald-400 transition-colors uppercase">{monitor.name}</h3>
+                <p className="text-xs text-slate-500 mt-1">Cron executing via Redis Queue • every {monitor.check_interval}s</p>
+              </div>
+              <div className="ml-auto text-right">
+                <div className="text-4xl font-black text-emerald-400 tracking-tighter">{uptimePercent}%</div>
+                <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Global Uptime</div>
               </div>
             </div>
 
             {/* Hero Stats Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { label: 'Uptime (All)', val: `${uptimePercent}%`, icon: 'bolt', color: 'emerald' },
-                { label: 'Avg Uptime (30d)', val: `${avg30Uptime}%`, icon: 'history', color: 'sky' },
-                { label: 'Avg Latency (30d)', val: `${avg30RT}ms`, icon: 'speed', color: 'violet' },
-                { label: 'Check Interval', val: `${monitor.check_interval}m`, icon: 'timer', color: 'amber' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-[#1a1c23] border border-white/[0.06] rounded-2xl p-5 hover:border-white/[0.1] transition-colors shadow-sm">
-                  <div className="flex items-center gap-3 mb-3">
-                     <div className={`w-8 h-8 rounded-lg bg-${stat.color}-500/15 flex items-center justify-center`}>
-                        <span className={`material-symbols-outlined text-[18px] text-${stat.color}-400`}>{stat.icon}</span>
-                     </div>
-                     <span className="text-[11px] text-slate-500 uppercase font-bold tracking-wider">{stat.label}</span>
-                  </div>
-                  <div className="text-2xl font-bold text-white">{stat.val}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
+                <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Node Status</div>
+                <div className="text-emerald-400 font-bold flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${monitor.last_status === 'up' ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'}`}></span>
+                  {statusLabel}
                 </div>
-              ))}
+              </div>
+              <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
+                <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Time Since Check</div>
+                <div className="text-white font-bold">{monitor.last_checked ? `${Math.floor((Date.now() - new Date(monitor.last_checked).getTime()) / 1000)}s ago` : 'Never'}</div>
+              </div>
+              <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
+                <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Response Latency</div>
+                <div className="text-white font-bold text-xl">{checks[0]?.response_time || '—'}<span className="text-xs text-slate-500 ml-1">ms</span></div>
+              </div>
+              <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
+                <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Tracked Outages</div>
+                <div className="text-white font-bold">{incidents.filter(i => new Date(i.started_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000).length} this week</div>
+              </div>
             </div>
 
             {/* Mobile Tab Bar */}
@@ -901,7 +698,7 @@ export default function MonitorDetail() {
                       <span className="material-symbols-outlined text-lg text-pink-400">favorite</span>
                       Heartbeat
                     </h3>
-                    <p className="text-[11px] text-slate-500 mb-5">Current health over last 90 pings</p>
+                    <p className="text-[11px] text-slate-500 mb-5">Current health over last 60 pings</p>
                     <HeartbeatTimeline checks={checks} />
                     <div className="flex justify-between text-[10px] text-slate-700 font-bold uppercase tracking-tight mt-3">
                       <span>Older</span>
@@ -956,6 +753,27 @@ export default function MonitorDetail() {
             {/* ── ANALYTICS TAB ── */}
             {activeTab === 'analytics' && (
               <AnalyticsTab stats={stats} checks={checks} incidents={incidents} />
+            )}
+
+            {/* ── SETTINGS TAB ── */}
+            {activeTab === 'settings' && (
+              <div className="bg-[#1a1c23] border border-white/[0.04] rounded-xl p-12 text-center animate-in fade-in duration-300">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6">
+                  <span className="material-symbols-outlined text-3xl text-slate-500">settings</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Monitor Configuration</h3>
+                <p className="text-slate-500 max-w-sm mx-auto mb-8">
+                  Management controls for this monitor (notifications, thresholds, and interval) are being integrated into this new view.
+                </p>
+                <div className="flex justify-center gap-4">
+                  <button onClick={handleToggle} className="px-6 py-2 rounded-xl bg-white/5 border border-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all">
+                    {monitor.is_active ? 'Pause Monitor' : 'Resume Monitor'}
+                  </button>
+                  <button onClick={handleDelete} className="px-6 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all">
+                    Delete Monitor
+                  </button>
+                </div>
+              </div>
             )}
 
           </div>

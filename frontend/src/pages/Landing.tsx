@@ -1,11 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function Landing() {
+  const navigate = useNavigate();
   const [visibleLines, setVisibleLines] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,7 +60,7 @@ export default function Landing() {
             </div>
             <span className="text-xl font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">NanoPing</span>
           </div>
-          
+
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
             <a href="#features" className="hover:text-white transition-colors hover:-translate-y-0.5 duration-300 transform inline-block">How it Works</a>
             <a href="#solutions" className="hover:text-white transition-colors hover:-translate-y-0.5 duration-300 transform inline-block">Architecture</a>
@@ -96,7 +103,7 @@ export default function Landing() {
         <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-slate-400 font-medium mb-12 opacity-90">
           <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Track nodes for <strong className="text-white">free</strong></span>
           <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Millisecond LATENCY accuracy</span>
-          <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Automated Email/Slack alerts</span>
+          <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Automated Email alerts</span>
           <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Historical Analytics</span>
         </div>
 
@@ -182,8 +189,8 @@ export default function Landing() {
               <div className="w-12 h-12 rounded-xl bg-slate-800 group-hover:bg-emerald-500/20 flex items-center justify-center mb-6 transition-colors">
                 <span className="material-symbols-outlined text-slate-400 group-hover:text-emerald-400">public</span>
               </div>
-              <h3 className="text-xl font-bold text-white mb-3">Global Edge Network</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">NanoPing instances fire simultaneously from AWS and Google Cloud regions worldwide, ensuring latency metrics accurately represent your global user base.</p>
+              <h3 className="text-xl font-bold text-white mb-3">High-Precision Monitoring</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">NanoPing utilizes high-frequency background workers to track your endpoints with millisecond accuracy, ensuring you're the first to know when things slow down.</p>
             </div>
 
             <div className="p-8 rounded-2xl bg-[#13161b] border border-slate-800/60 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500 group mt-0 md:mt-8">
@@ -236,8 +243,8 @@ export default function Landing() {
                     <span className="material-symbols-outlined text-[14px] text-slate-400 group-hover:text-emerald-400 font-bold transition-colors">bolt</span>
                   </div>
                   <div>
-                    <h4 className="text-white font-bold mb-1 group-hover:text-emerald-400 transition-colors">Global Edge Verification</h4>
-                    <p className="text-sm text-slate-400">We cross-reference dropped connections across multiple continents to completely eradicate false-positive server alarms.</p>
+                    <h4 className="text-white font-bold mb-1 group-hover:text-emerald-400 transition-colors">Instant Flash Notifications</h4>
+                    <p className="text-sm text-slate-400">Direct escalation to your inbox. Our background system dispatches automated email alerts the very millisecond a downtime incident is confirmed.</p>
                   </div>
                 </div>
                 <div className="flex gap-4 group cursor-pointer hover:-translate-y-1 transition-transform">
@@ -251,10 +258,10 @@ export default function Landing() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-6">
+              {/* <div className="flex gap-4 pt-6">
                 <button className="bg-white hover:bg-slate-200 text-slate-900 font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 text-sm">View Demo Logs</button>
                 <button className="bg-[#1a1c23] hover:bg-[#252830] text-white border border-slate-800 font-bold py-3 px-6 rounded-lg transition-transform hover:scale-105 text-sm">Review Capabilities</button>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Content : Terminal Mock */}

@@ -68,14 +68,16 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
         }
     }
 
-    // GET /api/dashboard/global-checks?limit=50
+    // GET /api/dashboard/global-checks?limit=20&page=1
     export const getGlobalChecks = async (req: Request, res: Response) => {
         try {
             const userId = String((req as CustomRequest).user?.id);
-            const limit = Math.min(parseInt(String(req.query.limit || "")) || 50, 2000);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 20, 100);
+            const page = Math.max(parseInt(String(req.query.page || "")) || 1, 1);
+            const offset = (page - 1) * limit;
 
-            const checks = await dashboardModel.getGlobalRecentChecks(userId, limit);
-            res.json({ success: true, data: checks });
+            const result = await dashboardModel.getGlobalRecentChecks(userId, limit, offset);
+            res.json({ success: true, data: result.checks, total: result.total, page, limit });
         } catch (error) {
             console.error("[Dashboard] getGlobalChecks error:", error);
             res.status(500).json({ success: false, message: "Failed to fetch global check logs." });
@@ -107,5 +109,19 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
         } catch (error) {
             console.error("[Dashboard] getGlobalIncidents error:", error);
             res.status(500).json({ success: false, message: "Failed to fetch global incidents." });
+        }
+    }
+
+    // GET /api/dashboard/all-monitor-stats?days=30
+    export const getAllMonitorStats = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const days = Math.min(parseInt(String(req.query.days || "")) || 30, 90);
+
+            const stats = await dashboardModel.getAllMonitorStats(userId, days);
+            res.json({ success: true, data: stats });
+        } catch (error) {
+            console.error("[Dashboard] getAllMonitorStats error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch all monitor stats." });
         }
     }
