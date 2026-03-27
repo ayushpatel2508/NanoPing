@@ -25,12 +25,41 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
       ? `🔴 URGENT: Your website ${url} is down!` 
       : `🟢 RESOLVED: Your website ${url} is back up!`;
 
-  const htmlBody = isDownAlert
-      ? `<h2>Action Required: Website Outage</h2>
-         <p>Our ping engine has detected that <b><a href="${url}">${url}</a></b> has failed multiple health checks and is currently offline.</p>
-         <p>Please check your server immediately.</p>`
-      : `<h2>Website Restored</h2>
-         <p>Good news! Our ping engine verified that <b><a href="${url}">${url}</a></b> is back online and responding with a 200 OK status.</p>`;
+  const primaryColor = isDownAlert ? '#ef4444' : '#10b981';
+  const statusLabel = isDownAlert ? 'OFFLINE' : 'ONLINE';
+
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1e293b; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+      <div style="text-align: center; margin-bottom: 25px;">
+        <div style="display: inline-block; padding: 10px 20px; background: ${primaryColor}; color: white; border-radius: 30px; font-weight: bold; font-size: 14px; letter-spacing: 0.1em;">
+          STATUS: ${statusLabel}
+        </div>
+      </div>
+      
+      <h1 style="color: #0f172a; font-size: 24px; margin-bottom: 10px; text-align: center;">${isDownAlert ? 'Action Required: Outage Detected' : 'Website Restored'}</h1>
+      
+      <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
+        Our monitoring engine has detected that <b><a href="${url}" style="color: ${primaryColor}; text-decoration: none;">${url}</a></b> ${isDownAlert ? 'has failed multiple health checks and is currently unresponsive.' : 'is back online and responding normally.'}
+      </p>
+
+      <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+        <div style="margin-bottom: 10px; font-size: 14px; color: #64748b;">TARGET URL</div>
+        <div style="font-family: monospace; font-size: 16px; color: #0f172a; word-break: break-all;">${url}</div>
+      </div>
+
+      <div style="text-align: center;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="display: inline-block; background: #0f172a; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+          View Detailed Analytics
+        </a>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+      <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+        You're receiving this because you enabled monitoring for ${url}.<br>
+        &copy; ${new Date().getFullYear()} NanoPing Monitoring.
+      </p>
+    </div>
+  `;
 
   // 3. Transmit the Email physically via SMTP (Will bounce to .on('failed') if Mailgun is down)
   await sendEmail(userEmail, subject, htmlBody);
