@@ -43,5 +43,5 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
   },
-  "exclude": ["node_modules", "migrations", "dist"]
+  "exclude": ["node_modules", "dist"]
 }
