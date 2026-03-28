@@ -16,6 +16,7 @@ node_modules/
 
 # Documentation and Tasks
 *.md
+!README.md
 CLAUDE.md
 GEMINI.md
 agents.md
