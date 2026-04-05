@@ -26,7 +26,7 @@ export const isLoggedIn = async (req: CustomRequest, res: Response, next: NextFu
     // 1. Try verifying Access Token first
     if (accessToken) {
       try {
-        decoded = jwt.verify(accessToken, process.env.JWT_SECRET!);
+        decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET!);
       } catch (err: any) {
         if (err.name === 'TokenExpiredError') {
           console.log("[AUTH] Access token expired, attempting refresh...");
@@ -39,7 +39,7 @@ export const isLoggedIn = async (req: CustomRequest, res: Response, next: NextFu
     // 2. If Access Token failed/expired, try Refresh Token
     if (!decoded && refreshToken) {
       try {
-        decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!);
+        decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
         usedRefreshToken = true;
       } catch (err: any) {
         console.warn("[AUTH] Refresh token failed:", err.message);
@@ -65,7 +65,7 @@ export const isLoggedIn = async (req: CustomRequest, res: Response, next: NextFu
     if (usedRefreshToken) {
       const newAccessToken = jwt.sign(
         { id: user_data.id, name: user_data.name, email: user_data.email },
-        process.env.JWT_SECRET!,
+        process.env.JWT_ACCESS_SECRET!,
         { expiresIn: "15m" } // Standard short expiry for security
       );
 

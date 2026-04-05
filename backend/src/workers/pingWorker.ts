@@ -6,7 +6,7 @@ import { getIO } from "../config/socket.js";
 
 // This worker listens to the "pings" Redis queue
 export const pingWorker = new Worker("pings", async (job: Job) => {
-  const { monitorId, url, alertThreshold } = job.data;
+  const { monitorId, userId, url, alertThreshold } = job.data;
   const startTime = Date.now();
   let status = "down";
   let statusCode = null;
@@ -28,11 +28,15 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
   const responseTime = Date.now() - startTime;
   const checkedAt = new Date();
 
-  // 1. Insert the raw ping log
-  const checkResult = await pool.query(
-    "INSERT INTO checks (monitor_id, status, status_code, response_time, checked_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-    [monitorId, status, statusCode, responseTime, checkedAt]
-  );
+  // 1. Buffer the raw ping log into Redis
+  const logEntry = JSON.stringify({
+    monitor_id: monitorId,
+    status,
+    status_code: statusCode,
+    response_time: responseTime,
+    checked_at: checkedAt.toISOString()
+  });
+  await redisConnection.rpush('ping_logs_buffer', logEntry);
 
   // Emit the new check to anyone listening to this monitor
   try {
@@ -55,10 +59,25 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
         last_checked = $2, 
         consecutive_failures = CASE WHEN $1 = 'down' THEN consecutive_failures + 1 ELSE 0 END 
     WHERE id = $3 
-    RETURNING consecutive_failures, last_status
+    RETURNING last_status
   `, [status, checkedAt, monitorId]);
 
-  const { consecutive_failures: consecutiveFailures, last_status: lastStatus } = monitorRow.rows[0];
+  const { last_status: lastStatus } = monitorRow.rows[0];
+
+  // 3. Track Consecutive Failures in Redis (The Brain)
+  let consecutiveFailures = 0;
+  const failKey = `monitor_fails:${monitorId}`;
+  
+  if (status === "down") {
+      consecutiveFailures = await redisConnection.incr(failKey);
+      
+      if (consecutiveFailures === 1 && userId) {
+          // Status just flipped from UP to DOWN for the first time. Invalidate cache!
+          await redisConnection.del(`user:${userId}:monitors_cache`);
+      }
+  } else {
+      await redisConnection.del(failKey);
+  }
 
   // Emit status update to the room (and potentially a global dashboard room if we add one)
   try {
@@ -76,9 +95,10 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
     });
   } catch (err) {}
 
-  // 3. CORE LOGIC: Does this trigger a new Alert?
-  if (status === "down" && consecutiveFailures >= alertThreshold) {
-      
+  // 4. CORE LOGIC: Does this trigger a new Alert?
+  // Only trigger the exact moment it hits the threshold! If > threshold, email is already sent.
+  if (status === "down" && consecutiveFailures === alertThreshold) {
+    
       const incident = await pool.query("SELECT id FROM incidents WHERE monitor_id = $1 AND is_resolved = false", [monitorId]);
       
       let incidentId;
@@ -125,6 +145,11 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
       if (resolved.rowCount && resolved.rowCount > 0) {
           const incidentId = resolved.rows[0].id;
           
+          if (userId) {
+              // Status just verified recovered. Invalidate cache!
+              await redisConnection.del(`user:${userId}:monitors_cache`);
+          }
+
           // Emit incident resolved event
           try {
             getIO().emit("incident:resolved", {

@@ -12,13 +12,13 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
 const setAuthCookies = async (res: Response, user: { id: string; name: string; email: string }) => {
   const accessToken = jwt.sign(
     { id: user.id, name: user.name, email: user.email },
-    process.env.JWT_SECRET!,
+    process.env.JWT_ACCESS_SECRET!,
     { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { id: user.id },
-    process.env.JWT_SECRET!,
+    process.env.JWT_REFRESH_SECRET!,
     { expiresIn: "7d" }
   );
 

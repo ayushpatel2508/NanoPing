@@ -11,6 +11,9 @@ import Incidents from './pages/Incidents';
 import Logs from './pages/Logs';
 import History from './pages/History';
 import StatusPages from './pages/StatusPages';
+import Maintenance from './pages/Maintenance';
+
+import PublicStatus from './pages/PublicStatus';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -25,6 +28,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/signin" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/status/:id" element={<PublicStatus />} />
 
         {/* Nested Dashboard Layout Routes */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -33,6 +37,7 @@ function App() {
           <Route path="/dashboard/logs" element={<Logs />} />
           <Route path="/dashboard/history" element={<History />} />
           <Route path="/dashboard/status-pages" element={<StatusPages />} />
+          <Route path="/dashboard/maintenance" element={<Maintenance />} />
         </Route>
 
         <Route path="/dashboard/:id" element={<ProtectedRoute><MonitorDetail /></ProtectedRoute>} />

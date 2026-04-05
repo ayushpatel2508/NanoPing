@@ -1,160 +1,100 @@
-# NanoPing - Real-time Website Monitoring
+# NanoPing - High-Performance Website Monitoring Platform
 
-A robust real-time website monitoring platform that tracks the uptime and response time of your websites, providing instant alerts when issues occur. Features include live status updates, detailed activity logs, incident history, and beautiful analytics dashboards.
+A distributed, real-time website monitoring engine designed for scale and reliability. Built with a decoupled architecture to handle concurrent uptime checks, automated alerting, and beautiful telemetry visualization.
 
-## Features
+## 🚀 Key Engineering Features
+- **Distributed Monitoring Engine**: Decoupled worker architecture using Redis and BullMQ to handle hundreds of concurrent pings without blocking the main event loop.
+- **Wait-Free Logging Architecture**: High-frequency ping logs are first buffered in Redis and asynchronously bulk-inserted into PostgreSQL every 30 seconds to minimize database I/O pressure.
+- **Event-Driven Real-time Updates**: Instant status refreshes and "Render-style" live logs powered by Socket.IO room-based broadcasting.
+- **Hybrid Auth Strategy**: Seamlessly integrates secure JWT-based manual authentication with Clerk OAuth providers.
+- **Intelligent Alerting**: Multi-threshold failure tracking (Email) with built-in idempotency to prevent duplicate notifications during network instability.
 
-### Real-time Monitoring & Communication
-- **Real-time Status Updates**: Powered by Socket.IO for instant dashboard refreshes across all participants.
-- **Smart Notifications**: Alerts triggered via Email/SMS using Nodemailer and Twilio after consecutive failures.
-- **Dynamic Ping History**: Real-time "Render-style" logs showing every ping attempt and its result.
+---
 
-### User Management
-- **Hybrid Authentication**: Secure JWT-based manual registration/login alongside Clerk (OAuth) integration.
-- **User Profiles**: Manage your monitors, account settings, and notification preferences.
-- **Session Security**: HTTP-only cookies and protected routes for secure data access.
-
-### Monitor Management
-- **Customizable Checks**: Easily add websites with user-defined check intervals (1-60 min) and alert thresholds.
-- **Incident History**: Full transparency of all past downtime events with duration tracking.
-- **Analytics Dashboards**: Interactive charts for daily uptime and response time history using Recharts.
-
-## Tech Stack
-
-### Client (Frontend)
-| Technology | Purpose |
+## 🛠 Tech Stack
+| Layer | Technologies |
 | :--- | :--- |
-| React 18 | UI Library |
-| Vite | Build Tool |
-| Tailwind CSS | Utility-first CSS Styling |
-| Radix UI | Accessible Component Primitives |
-| Socket.IO Client | Real-time Communication |
-| Recharts | Data Visualization |
-| Clerk | Authentication |
-| Axios | HTTP Client |
-| Lucide React | Icon Pack |
+| **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Lucide, Clerk SDK |
+| **Backend** | Node.js (v18+), Express 5, Socket.IO, BullMQ, Axios |
+| **Persistence** | PostgreSQL (Relational Data), Redis (Queue & High-speed Cache) |
+| **DevOps** | Docker, Docker Compose, GitHub Actions |
 
-### Server (Backend)
-| Technology | Purpose |
-| :--- | :--- |
-| Node.js | Runtime Environment |
-| Express 5 | Web Framework |
-| Socket.IO | Real-time Events |
-| PostgreSQL | Database (Raw SQL via `pg`) |
-| Redis + BullMQ | Background Worker Queue |
-| JWT | Authentication Tokens |
-| bcryptjs | Password Hashing |
-| Nodemailer | Email Alerts |
-| Twilio | SMS Alerts |
+---
 
-## Project Structure
-
-```text
-ping-website/
-├── frontend/               # React Frontend (Vite)
-│   └── src/
-│       ├── components/     # UI Components (layouts, ui, etc)
-│       ├── pages/          # Full Page Views (Dashboard, Login, etc)
-│       ├── services/       # API and Socket Services
-│       ├── store/          # Redux/Zustand State Management
-│       └── hooks/          # Custom React Hooks
-│
-└── backend/                # Node.js Backend (Express)
-    └── src/
-        ├── controllers/    # API Controllers
-        ├── models/         # Database Table Definitions
-        ├── routes/         # API Route Handlers
-        ├── workers/        # BullMQ Monitor Workers
-        ├── scripts/        # Database setup and migrations
-        └── utils/          # Helper utilities
+## 📐 System Architecture
+```mermaid
+graph TD
+    User["Dashboard (React)"] <-->|Socket.IO / REST| API["Express API Server"]
+    API <-->|Pings| PG[("PostgreSQL")]
+    API -->|Queue Job| Redis[("Redis Buffer / BullMQ")]
+    Redis -->|Process| PingWorker["Ping Worker (Worker Pool)"]
+    PingWorker -->|Check| Target["External Sites"]
+    PingWorker -->|Buffer Log| Redis
+    LogFlusher["Log Flusher (Cron)"] -->|Pop & Bulk Insert| Redis
+    LogFlusher -->|Commit| PG
+    PingWorker -->|Trigger| AlertQueue["Alert Queue"]
+    AlertQueue -->|Notify| Mail["Nodemailer / Twilio"]
 ```
 
-## Getting Started
+---
 
-### Prerequisites
-- Node.js (v18+)
-- PostgreSQL (Local or managed)
-- Redis Server (Required for BullMQ)
+## 🧠 Engineering Deep Dive (Interviewer FAQs)
 
-### Environment Variables
+### 1. How do you handle database I/O bottlenecks during high-frequency checks?
+We implement a **Wait-Free Logging** pattern. Instead of writing every ping result to PostgreSQL immediately, the `PingWorker` pushes logs to a Redis list (`ping_logs_buffer`). A separate `LogFlusher` cron job atomically pops these logs (up to 1000 at a time) and performs a single SQL bulk-insertion. This reduces the number of database write operations by as much as 90%.
 
-#### Server (`backend/.env`):
-```env
-PORT=5000
-DATABASE_URL=postgres://user:password@localhost:5432/nanoping
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your_jwt_secret
-CLERK_SECRET_KEY=your_clerk_key
-EMAIL_HOST=smtp.example.com
-EMAIL_USER=your_email
-EMAIL_PASS=your_password
-```
+### 2. How are Race Conditions handled in the Monitoring Engine?
+To prevent duplicate "Down" alerts if multiple workers finish simultaneously (due to retries or network drifts), we use **BullMQ Idempotency**. Every alert job is assigned a deterministic `jobId` formatted as `down-alert-${incidentId}`. Redis ensures that only one job with this specific ID can exist in the queue at any time.
 
-#### Client (`frontend/.env`):
-```env
-VITE_API_URL=http://localhost:5000
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_pub_key
-```
+### 3. How do you ensure the monitoring workers don't hang?
+We use a strict 10-second timeout managed by the **AbortController API**. This prevents "zombie workers" from exhausting the Node.js worker pool when target websites are unresponsive or experiencing slow DNS lookups.
 
-### Installation
+### 4. What is the Caching Strategy?
+We use a **Selective Caching** layer for the Dashboard. Common views are cached in Redis with a 24-hr TTL. However, the cache is not static; it is **Event-Driven**. Any status flip (Up -> Down), monitor deletion, or manual update triggers an immediate cache invalidation for that specific user.
 
-1. Clone the repository:
+---
+
+## 🛰 REST API Reference
+
+### Auth & User
+- `POST /api/auth/login` - Request JWT session
+- `POST /api/auth/register` - Create manual account
+- `POST /api/auth/clerk-sync` - Sync OAuth session (Clerk)
+- `GET /api/auth/me` - Profile context
+
+### Monitoring
+- `POST /api/monitors` - Add new target URL
+- `GET /api/monitors` - List user monitors (with pagination & status filtering)
+- `GET /api/monitors/:id` - Detailed telemetry for a specific site
+- `PUT /api/monitors/:id` - Update check intervals/thresholds
+- `DELETE /api/monitors/:id` - Purge target & associated history
+
+### Dashboard & Analytics
+- `GET /api/dashboard/summary` - Aggregated global stats (Monitors Up vs Down)
+- `GET /api/dashboard/global-stats` - 30-day uptime overview
+- `GET /api/dashboard/all-monitor-stats` - Detailed multi-monitor health map
+
+---
+
+## ⚡ Quick Start (Local Setup)
+
+1. **Spin up Infrastructure**:
    ```bash
-   git clone https://github.com/ayushpatel2508/NanoPing
-   cd ping-website
+   docker-compose up -d  # Starts PostgreSQL and Redis
    ```
 
-2. Install Server Dependencies:
+2. **Backend Setup**:
    ```bash
-   cd backend
-   npm install
+   cd backend && npm install
+   cp .env.example .env  # Configure your Postgres & Redis URLs
+   npm run dev
    ```
 
-3. Install Client Dependencies:
+3. **Frontend Setup**:
    ```bash
-   cd ../frontend
-   npm install
+   cd frontend && npm install
+   npm run dev
    ```
 
-## Running Locally
+---
 
-### Terminal 1 - Server:
-```bash
-cd backend
-npm run dev
-```
-Server runs on `http://localhost:5000`
-
-### Terminal 2 - Client:
-```bash
-cd frontend
-npm run dev
-```
-Client runs on `http://localhost:5173`
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| POST | /api/auth/register | Register new user | Public |
-| POST | /api/auth/login | Login user | Public |
-| POST | /api/auth/clerk-sync | Sync Clerk session | Public/Clerk |
-| GET | /api/auth/me | Get profile | Protected |
-
-### Monitors
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| POST | /api/monitors | Create new monitor | Protected |
-| GET | /api/monitors | Get all user monitors | Protected |
-| GET | /api/monitors/:id | Get monitor details | Protected |
-| PUT | /api/monitors/:id | Update monitor | Protected |
-| DELETE | /api/monitors/:id | Delete monitor | Protected |
-
-### Analytics & Logs
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| GET | /api/dashboard/summary | Global stats summary | Protected |
-| GET | /api/monitors/:id/checks | Get recent ping logs | Protected |
-| GET | /api/monitors/:id/stats | Get daily uptime stats | Protected |
-| GET | /api/monitors/:id/incidents| Get incident history | Protected |

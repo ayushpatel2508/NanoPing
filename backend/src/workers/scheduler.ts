@@ -7,7 +7,7 @@ export const startScheduler = () => {
         try {
             // Ask PostgreSQL which websites are due for a check
             const result = await pool.query(`
-                SELECT id, url, alert_threshold 
+                SELECT id, user_id, url, alert_threshold 
                 FROM monitors 
                 WHERE is_active = true 
                 AND (last_checked IS NULL OR last_checked < NOW() - (check_interval * interval '1 minute'))
@@ -16,7 +16,8 @@ export const startScheduler = () => {
             // throw all of them into BullMQ
             for (const monitor of result.rows) {
                 pingQueue.add("ping", { 
-                    monitorId: monitor.id, 
+                    monitorId: monitor.id,
+                    userId: monitor.user_id,
                     url: monitor.url, 
                     alertThreshold: monitor.alert_threshold 
                 }, {

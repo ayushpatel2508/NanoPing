@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { monitorModel } from "../models/monitorModel.js";
 import type { CustomRequest } from "../middlewares/isLoggedIn.js";
+import redisConnection from "../config/redis.js";
 
 // Helper for URL validation
 const isValidUrl = (urlString: string) => {
@@ -11,6 +12,8 @@ const isValidUrl = (urlString: string) => {
     return false;
   }
 };
+
+// ... existing code ...
 
 // POST /api/monitors
 export const createMonitor = async (req: CustomRequest, res: Response): Promise<void> => {
@@ -44,6 +47,10 @@ export const createMonitor = async (req: CustomRequest, res: Response): Promise<
     }
 
     const monitor = await monitorModel.create(userId, name, url, check_interval, alert_threshold);
+    
+    // Invalidate dashboard cache for this user since they added a new monitor
+    await redisConnection.del(`user:${userId}:monitors_cache`);
+
     res.status(201).json({ status: "success", data: monitor });
   } catch (err) {
     console.error("Create monitor error:", err);
@@ -67,15 +74,36 @@ export const getMonitors = async (req: CustomRequest, res: Response): Promise<vo
 
     const status = (req.query.status as string)?.toLowerCase();
 
+    // 1. Check Redis Cache strictly for the default dashboard payload (prevents cache bloating)
+    const isDefaultRequest = page === 1 && limit === 20 && !status;
+    const cacheKey = `user:${userId}:monitors_cache`;
+
+    if (isDefaultRequest) {
+      const cachedData = await redisConnection.get(cacheKey);
+      if (cachedData) {
+        // Cache HIT: Send response instantly without touching DB
+        res.status(200).json(JSON.parse(cachedData));
+        return;
+      }
+    }
+
+    // 2. Cache MISS: Query the database
     const { monitors, total } = await monitorModel.getAllForUser(userId, limit, offset, status);
 
-    res.status(200).json({
+    const responseData = {
       status: "success",
       data: {
         monitors,
         pagination: { page, limit, total }
       }
-    });
+    };
+
+    // 3. Save to Redis with 24-hr expiry
+    if (isDefaultRequest) {
+      await redisConnection.setex(cacheKey, 86400, JSON.stringify(responseData));
+    }
+
+    res.status(200).json(responseData);
   } catch (err) {
     console.error("Get monitors error:", err);
     res.status(500).json({ status: "error", message: "Internal server error" });
@@ -144,6 +172,9 @@ export const updateMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
+    // Invalidate dashboard cache
+    await redisConnection.del(`user:${userId}:monitors_cache`);
+
     res.status(200).json({ status: "success", data: updatedMonitor });
   } catch (err) {
     console.error("Update monitor error:", err);
@@ -179,6 +210,9 @@ export const toggleMonitorStatus = async (req: CustomRequest, res: Response): Pr
       return;
     }
 
+    // Invalidate dashboard cache
+    await redisConnection.del(`user:${userId}:monitors_cache`);
+
     res.status(200).json({ 
       status: "success", 
       message: is_active ? "Monitor resumed" : "Monitor paused",
@@ -211,6 +245,9 @@ export const deleteMonitor = async (req: CustomRequest, res: Response): Promise<
       res.status(404).json({ status: "error", message: "Monitor not found" });
       return;
     }
+
+    // Invalidate dashboard cache
+    await redisConnection.del(`user:${userId}:monitors_cache`);
 
     res.status(200).json({ status: "success", message: "Monitor deleted" });
   } catch (err) {

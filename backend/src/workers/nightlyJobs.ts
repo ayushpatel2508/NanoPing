@@ -27,9 +27,9 @@ export const startNightlyAggregation = () => {
                         avg_response_time = EXCLUDED.avg_response_time,
                         total_checks = EXCLUDED.total_checks;
             `);
-            console.log("[NightlyJob] ✅ Daily stats successfully aggregated.");
+            console.log("[NightlyJob]  Daily stats successfully aggregated.");
         } catch (error) {
-            console.error("[NightlyJob] ❌ Aggregation failed:", error);
+            console.error("[NightlyJob]  Aggregation failed:", error);
         }
     };
 
@@ -60,9 +60,9 @@ export const startDataPurge = () => {
             const result = await pool.query(`
                 DELETE FROM checks WHERE checked_at < NOW() - INTERVAL '7 days'
             `);
-            console.log(`[PurgeJob] ✅ Purged ${result.rowCount} old check records.`);
+            console.log(`[PurgeJob]  Purged ${result.rowCount} old check records.`);
         } catch (error) {
-            console.error("[PurgeJob] ❌ Purge failed:", error);
+            console.error("[PurgeJob]  Purge failed:", error);
         }
     };
 

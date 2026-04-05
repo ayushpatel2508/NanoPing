@@ -15,14 +15,12 @@ import { pingWorker } from "./workers/pingWorker.js";
 import { alertWorker } from "./workers/alertWorker.js";
 import { startScheduler } from "./workers/scheduler.js";
 import { startNightlyAggregation, startDataPurge } from "./workers/nightlyJobs.js";
+import { startLogFlusher } from "./workers/logFlusher.js";
 import redisConnection from "./config/redis.js";
 
-import { createServer } from "http";
 import { initSocket } from "./config/socket.js";
 
 const app = express();
-const httpServer = createServer(app);
-const io = initSocket(httpServer);
 
 // Middleware
 app.use(cors({
@@ -36,13 +34,16 @@ app.get("/", (req: Request, res: Response) => {
     res.send("Hello World");
 });
 
+import publicRoutes from "./routes/publicRoutes.js";
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/monitors", monitorRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/public", publicRoutes);
 
-const server = httpServer.listen(process.env.PORT, () => {
+const server = app.listen(process.env.PORT, () => {
     const mode = process.env.NODE_ENV || 'development';
     console.log(` NanoPing Server is running on port ${process.env.PORT} in ${mode.toUpperCase()} mode`);
     
@@ -53,7 +54,10 @@ const server = httpServer.listen(process.env.PORT, () => {
     startScheduler();           // 1-minute ping cron
     startNightlyAggregation();  // Midnight stats aggregation
     startDataPurge();           // 1 AM data purge
+    startLogFlusher();          // 30-second bulk insert cron
 });
+
+const io = initSocket(server);
 
 // Graceful Shutdown: finish active jobs before killing the process
 const gracefulShutdown = async () => {

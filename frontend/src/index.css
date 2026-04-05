@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 @layer utilities {
   .perspective-1000 { perspective: 1000px; }
   .rotate-isometric { transform: rotateX(10deg) rotateY(15deg); }

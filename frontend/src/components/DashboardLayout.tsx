@@ -17,6 +17,7 @@ export default function DashboardLayout() {
     { name: 'Incidents', path: '/dashboard/incidents', icon: 'security' },
     { name: 'Uptime history', path: '/dashboard/history', icon: 'history' },
     { name: 'Status pages', path: '/dashboard/status-pages', icon: 'sensors' },
+    { name: 'Maintenance', path: '/dashboard/maintenance', icon: 'calendar_clock' },
     { name: 'Logs', path: '/dashboard/logs', icon: 'receipt_long' },
   ];
 
@@ -74,12 +75,6 @@ export default function DashboardLayout() {
             </div>
             <span className="material-symbols-outlined text-slate-500 group-hover:text-emerald-400 transition-colors">settings</span>
           </Link>
-          
-          <div className="mt-3">
-            <Link to="/settings" className="block w-full text-center py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white rounded-lg text-sm font-bold tracking-wide transition-all shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_15px_rgba(16,185,129,0.4)] hover:-translate-y-0.5">
-              Upgrade now
-            </Link>
-          </div>
         </div>
 
       </aside>

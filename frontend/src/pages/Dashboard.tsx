@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMonitorStore } from '../store/useMonitorStore';
 import { useSocket } from '../hooks/useSocket';
 import { dashboardApi } from '../api/dashboard';
+import { Skeleton } from 'boneyard-js/react';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'up' | 'down' | 'paused'>('all');
 
   const { socket } = useSocket();
+  const isMock = new URLSearchParams(window.location.search).get('mock') === 'true';
 
   useEffect(() => {
     if (!socket) return;
@@ -117,7 +119,8 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+      <Skeleton name="dashboard-header" loading={isLoading && !isMock}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Monitoring</h1>
           <p className="text-slate-400 text-sm mt-1">Global overview of all your monitored endpoints.</p>
@@ -129,8 +132,10 @@ export default function Dashboard() {
           <span className="material-symbols-outlined text-lg">add</span> Add Monitor
         </button>
       </div>
+      </Skeleton>
 
-      <div className="bg-[#1a1c23] border border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
+      <Skeleton name="dashboard-table" loading={isLoading && !isMock}>
+        <div className="bg-[#1a1c23] border border-white/[0.06] rounded-2xl overflow-hidden shadow-sm">
         {/* Filter Tabs & Header */}
         <div className="px-6 py-4 border-b border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/[0.02]">
           <div className="flex items-center gap-2">
@@ -163,7 +168,7 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
-              {isLoading && monitors.length === 0 ? (
+              {(isLoading && monitors.length === 0 && !isMock) ? (
                 <tr>
                   <td colSpan={4} className="text-center py-20 text-slate-500">
                     <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
@@ -220,6 +225,7 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+      </Skeleton>
 
       {/* Add Monitor Modal */}
       {showModal && (
@@ -250,22 +256,40 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-widest block mb-1.5 ml-1">Frequency (min)</label>
-                  <input type="number" min={1} max={60} value={form.check_interval} onChange={(e) => setForm({ ...form, check_interval: parseInt(e.target.value) || 5 })}
-                    className="w-full bg-[#13151b] border border-white/[0.06] rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all"
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={form.check_interval || ''} onChange={(e) => setForm({ ...form, check_interval: parseInt(e.target.value) || 0 })}
+                    className={`w-full bg-[#13151b] border rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none transition-all ${
+                      (form.check_interval < 3 || form.check_interval > 60) ? 'border-red-500/50 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-white/[0.06] focus:border-emerald-500/50'
+                    }`}
                   />
+                  {(form.check_interval < 3 || form.check_interval > 60) && (
+                    <span className="text-red-400 text-xs mt-1.5 ml-1 font-bold block">Must be between 3 and 60</span>
+                  )}
                 </div>
                 <div>
                   <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-widest block mb-1.5 ml-1">Threshold</label>
-                  <input type="number" min={1} max={10} value={form.alert_threshold} onChange={(e) => setForm({ ...form, alert_threshold: parseInt(e.target.value) || 3 })}
-                    className="w-full bg-[#13151b] border border-white/[0.06] rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 transition-all"
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" value={form.alert_threshold || ''} onChange={(e) => setForm({ ...form, alert_threshold: parseInt(e.target.value) || 0 })}
+                    className={`w-full bg-[#13151b] border rounded-2xl px-5 py-3.5 text-white text-sm focus:outline-none transition-all ${
+                       (form.alert_threshold < 1 || form.alert_threshold > 60) ? 'border-red-500/50 focus:border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-white/[0.06] focus:border-emerald-500/50'
+                    }`}
                   />
+                  {(form.alert_threshold < 1 || form.alert_threshold > 60) && (
+                    <span className="text-red-400 text-xs mt-1.5 ml-1 font-bold block">Must be between 1 and 60</span>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3 mt-10">
               <button onClick={() => setShowModal(false)} className="flex-1 border border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/5 py-3.5 rounded-2xl text-sm font-bold transition-all">Cancel</button>
-              <button onClick={handleCreate} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3.5 rounded-2xl text-sm transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.4)]">
+              <button 
+                onClick={handleCreate} 
+                className={`flex-1 font-bold py-3.5 rounded-2xl text-sm transition-all focus:outline-none ${
+                  (form.check_interval >= 3 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)
+                  ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-900 shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.4)] cursor-pointer'
+                  : 'bg-emerald-900/40 text-emerald-700 cursor-not-allowed border border-emerald-900/50'
+                }`}
+                disabled={!(form.check_interval >= 3 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)}
+              >
                 Create
               </button>
             </div>
