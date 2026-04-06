@@ -4,7 +4,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.sql(`
-        ALTER TABLE users ADD COLUMN refresh_token TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS refresh_token TEXT;
     `);
 }
 

@@ -4,7 +4,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.sql(`
-        CREATE TABLE monitors (
+        CREATE TABLE IF NOT EXISTS monitors (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID REFERENCES users(id) ON DELETE CASCADE,
             name TEXT NOT NULL,

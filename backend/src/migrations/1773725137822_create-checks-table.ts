@@ -4,7 +4,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.sql(`
-        CREATE TABLE checks (
+        CREATE TABLE IF NOT EXISTS checks (
             id BIGSERIAL PRIMARY KEY,
             monitor_id UUID REFERENCES monitors(id) ON DELETE CASCADE,
             status TEXT NOT NULL,
@@ -13,7 +13,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             message TEXT,
             checked_at TIMESTAMP DEFAULT NOW()
         );
-        CREATE INDEX idx_checks_monitor_time ON checks(monitor_id, checked_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_checks_monitor_time ON checks(monitor_id, checked_at DESC);
     `);
 }
 

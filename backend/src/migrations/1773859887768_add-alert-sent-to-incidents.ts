@@ -5,7 +5,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
 export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.sql(`
         ALTER TABLE incidents
-        ADD COLUMN alert_sent BOOLEAN DEFAULT false;
+        ADD COLUMN IF NOT EXISTS alert_sent BOOLEAN DEFAULT false;
     `);
 }
 

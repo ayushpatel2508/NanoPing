@@ -7,35 +7,42 @@ import type { CustomRequest } from "../middlewares/isLoggedIn.js";
 /**
  * [HELPER] setAuthCookies
  * Centralizes JWT generation, database refresh token updates, and cookie setting.
- * Uses sameSite: 'none' for production to support Vercel -> Render cross-site cookies.
  */
-const setAuthCookies = async (res: Response, user: { id: string; name: string; email: string }) => {
+const setAuthCookies = async (res: Response, user: { id: string; name: string; email: string }, skipDbUpdate: boolean = false) => {
+  const accessSecret = process.env.JWT_ACCESS_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+  if (!accessSecret || !refreshSecret) {
+    console.error("[AUTH ERROR] Missing JWT Secrets in environment variables.");
+    throw new Error("Internal server configuration error: Auth secrets missing.");
+  }
+
   const accessToken = jwt.sign(
     { id: user.id, name: user.name, email: user.email },
-    process.env.JWT_ACCESS_SECRET!,
+    accessSecret,
     { expiresIn: "15m" }
   );
 
   const refreshToken = jwt.sign(
     { id: user.id },
-    process.env.JWT_REFRESH_SECRET!,
+    refreshSecret,
     { expiresIn: "7d" }
   );
 
-  // 1. Update the database with the new refresh token
-  await userModel.updateRefreshToken(user.id, refreshToken);
+  // 1. Update the database if not already handled by a transactional creation
+  if (!skipDbUpdate) {
+    await userModel.updateRefreshToken(user.id, refreshToken);
+  }
 
   const isProd = process.env.NODE_ENV === "production";
 
-  // 2. Configure Cookie Options
   const cookieOptions: any = {
     httpOnly: true,
-    secure: isProd, // Must be true for sameSite: 'none'
+    secure: isProd, 
     sameSite: isProd ? "none" : "lax", 
     path: "/",
   };
 
-  // Access token: 24h in dev (easier testing), 15m in prod
   const accessMaxAge = isProd ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
 
   res.cookie("accessToken", accessToken, {
@@ -45,7 +52,7 @@ const setAuthCookies = async (res: Response, user: { id: string; name: string; e
 
   res.cookie("refreshToken", refreshToken, {
     ...cookieOptions,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
   });
 
   return { accessToken, refreshToken };
@@ -74,26 +81,41 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create the user
-    const newUser = await userModel.create(email, passwordHash, name);
+    // ATOMICITY: Generate tokens BEFORE creating the user in DB
+    const accessSecret = process.env.JWT_ACCESS_SECRET;
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+    if (!accessSecret || !refreshSecret) {
+      console.error("[AUTH] Missing JWT secrets on server.");
+      res.status(500).json({ status: "error", message: "Server configuration error: JWT secrets missing." });
+      return;
+    }
 
-    // [AUTO-LOGIN] Set cookies immediately after registration
-    await setAuthCookies(res, newUser);
+    const refreshToken = jwt.sign({ email }, refreshSecret, { expiresIn: '7d' });
 
-    console.log(`[AUTH] User ${newUser.email} registered and logged in successfully.`);
+    // Create the user with the refreshToken in a SINGLE query
+    const newUser = await userModel.create(email, passwordHash, name, refreshToken);
+
+    // Finalize tokens and cookies
+    const tokens = await setAuthCookies(res, newUser, true); // skipDbUpdate: true
+
+    console.log(`[AUTH] User ${newUser.email} registered atomicially.`);
 
     res.status(201).json({
       status: "success",
-      message: "User registered and logged in successfully",
+      message: "User registered successfully",
       data: {
         id: newUser.id,
         email: newUser.email,
-        name: newUser.name
+        name: newUser.name,
+        accessToken: tokens.accessToken
       }
     });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ status: "error", message: "An internal server error occurred" });
+  } catch (error: any) {
+    console.error("[AUTH] Registration error:", error);
+    res.status(500).json({ 
+      status: "error", 
+      message: error.message || "An internal server error occurred during registration" 
+    });
   }
 };
 
@@ -124,9 +146,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Set cookies using our helper
-    await setAuthCookies(res, user_exist);
+    const tokens = await setAuthCookies(res, user_exist);
 
-    console.log(`[AUTH] User ${user_exist.email} logged in successfully. Cookies set.`);
+    console.log(`[AUTH] User ${user_exist.email} logged in successfully.`);
 
     res.status(200).json({
       status: "success",
@@ -134,12 +156,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       data: {
         id: user_exist.id,
         email: user_exist.email,
-        name: user_exist.name
+        name: user_exist.name,
+        accessToken: tokens.accessToken
       }
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ status: "error", message: "Internal server error" });
+  } catch (err: any) {
+    console.error("[AUTH] Login error:", err);
+    res.status(500).json({ 
+      status: "error", 
+      message: err.message || "Internal server error" 
+    });
   }
 };
 

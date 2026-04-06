@@ -27,13 +27,14 @@ export const userModel = {
   },
 
   // Create a new user (Manual registration)
-  create: async (email: string, passwordHash: string, name: string): Promise<User> => {
+  // [ATOMIC] Accepts refreshToken to insert in a single query
+  create: async (email: string, passwordHash: string, name: string, refreshToken?: string): Promise<User> => {
     const query = `
-      INSERT INTO users (email, password_hash, name)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (email, password_hash, name, refresh_token)
+      VALUES ($1, $2, $3, $4)
       RETURNING id, email, name, created_at;
     `;
-    const result = await pool.query(query, [email, passwordHash, name]);
+    const result = await pool.query(query, [email, passwordHash, name, refreshToken || null]);
     return result.rows[0];
   },
 
