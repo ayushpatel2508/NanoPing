@@ -31,6 +31,8 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
+    if (isLoading) return; // Wait for skeleton to finish loading
+
     let interval: ReturnType<typeof setInterval>;
     const observer = new IntersectionObserver(
       (entries) => {
@@ -55,7 +57,7 @@ export default function Landing() {
       observer.disconnect();
       if (interval) clearInterval(interval);
     };
-  }, []);
+  }, [isLoading]);
 
   return (
     <div className="min-h-screen bg-[#0f1115] font-sans text-slate-300 selection:bg-emerald-500/30 selection:text-emerald-200 overflow-hidden">
@@ -332,90 +334,14 @@ export default function Landing() {
                   </div>
                 </div>
 
-                {/* Integrations Grid underneath Terminal */}
-                <div className="mt-6 bg-[#13161b] border border-slate-800 rounded-2xl p-6 hover:shadow-[0_0_20px_rgba(16,185,129,0.05)] transition-shadow duration-500">
-                  <h4 className="text-white font-bold mb-4 font-sans">Supported Integrations</h4>
-                  <div className="flex flex-wrap gap-3">
-                    {['Slack', 'Discord', 'Custom Webhooks', 'Email/SMTP', 'Redis', 'PostgreSQL', 'BullMQ Queue'].map((tool) => (
-                      <span key={tool} className="text-xs text-slate-400 bg-[#1a1c23] border border-slate-800 hover:border-emerald-500/50 hover:bg-emerald-500/10 hover:text-emerald-400 px-3 py-1.5 rounded-md font-sans font-medium transition-colors cursor-default tracking-wide">{tool}</span>
-                    ))}
-                  </div>
-                </div>
+
               </div>
             </div>
           </div>
         </section>
       </Skeleton>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="bg-[#0b0c10] py-32 border-b border-slate-800/50">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <div className="text-center mb-20 animate-[fade-in_1s_ease-out]">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">Flexible Plans for <span className="text-emerald-500">Every Scale.</span></h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">Start for free and scale as your infrastructure grows. No hidden fees.</p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Free Plan */}
-            <div className="bg-[#13161b] rounded-3xl p-8 border border-slate-800 hover:border-slate-700 transition-all hover:scale-[1.02] duration-300 flex flex-col group">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-white mb-2">Hobby</h3>
-                <p className="text-slate-500 text-sm">Perfect for personal side projects.</p>
-              </div>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold text-white">$0</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> 5 Monitors</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> 5min Interval</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> Email Notifications</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300 opacity-50"><span className="material-symbols-outlined text-sm">block</span> No Status Pages</li>
-              </ul>
-              <Link to="/signup" className="w-full py-4 px-6 rounded-2xl border border-slate-700 text-white font-bold text-sm hover:bg-white/5 transition-all text-center">Get Started</Link>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-[#1a1c23] rounded-3xl p-8 border-2 border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.1)] hover:border-emerald-500/50 transition-all hover:scale-[1.05] duration-300 flex flex-col relative z-20 group">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-slate-900 text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-[0_10px_20px_rgba(16,185,129,0.3)]">Most Popular</div>
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-white mb-2">Professional</h3>
-                <p className="text-slate-500 text-sm">For growing engineering teams.</p>
-              </div>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold text-white">$15</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-sm text-slate-200 font-medium"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> 50 Monitors</li>
-                <li className="flex items-center gap-3 text-sm text-slate-200 font-medium"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> 1min High-Frequency Checks</li>
-                <li className="flex items-center gap-3 text-sm text-slate-200 font-medium"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> Slack & Discord Alerts</li>
-                <li className="flex items-center gap-3 text-sm text-slate-200 font-medium"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> 2 Public Status Pages</li>
-              </ul>
-              <Link to="/signup" className="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-sm shadow-[0_10px_20px_rgba(16,185,129,0.3)] transition-all text-center">Go Professional</Link>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="bg-[#13161b] rounded-3xl p-8 border border-slate-800 hover:border-slate-700 transition-all hover:scale-[1.02] duration-300 flex flex-col group">
-              <div className="mb-8">
-                <h3 className="text-xl font-bold text-white mb-2">Business</h3>
-                <p className="text-slate-500 text-sm">Critical mission-wide visibility.</p>
-              </div>
-              <div className="mb-8">
-                <span className="text-4xl font-extrabold text-white">$49</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="space-y-4 mb-10 flex-1">
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> Unlimited Monitors</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> Custom Webhook Payloads</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> White-label Status Pages</li>
-                <li className="flex items-center gap-3 text-sm text-slate-300"><span className="material-symbols-outlined text-emerald-500 text-lg">check_circle</span> SLA Guarantees</li>
-              </ul>
-              <Link to="/signup" className="w-full py-4 px-6 rounded-2xl border border-slate-700 text-white font-bold text-sm hover:bg-white/5 transition-all text-center">Contact Sales</Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Pre-Footer Call To Action Section */}
       <section className="bg-gradient-to-b from-[#0b0c10] to-[#0f1115] py-24 text-center">
@@ -474,7 +400,6 @@ export default function Landing() {
               <ul className="space-y-4 text-sm font-medium">
                 <li><a href="#" className="hover:text-emerald-400 transition-colors">Integrations</a></li>
                 <li><a href="#" className="hover:text-emerald-400 transition-colors">API Documentation</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors">Maintenance Windows</a></li>
                 <li><a href="#" className="hover:text-emerald-400 transition-colors">Roadmap</a></li>
                 <li><a href="#" className="hover:text-emerald-400 transition-colors">System Status</a></li>
               </ul>

@@ -6,6 +6,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { register, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
@@ -31,7 +32,7 @@ export default function Signup() {
             </div>
             <span className="text-2xl font-bold tracking-tight text-white">NanoPing</span>
           </Link>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Create Account</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight mb-2">Create Account for Free</h1>
           <p className="text-slate-400">Join the elite network of developers monitoring with NanoPing</p>
         </div>
 
@@ -71,17 +72,24 @@ export default function Signup() {
               <label className="block text-sm font-medium text-slate-400 mb-2 ml-1" htmlFor="password">Password</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg">lock</span>
-                <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#0f1115] border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all appearance-none"
+                <input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-[#0f1115] border border-slate-800 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all appearance-none"
                   placeholder="At least 8 characters" required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none flex items-center justify-center transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
               </div>
             </div>
 
             <button type="submit" disabled={isLoading}
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 mt-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Creating Account...' : 'Start Free Trial'}
+              {isLoading ? 'Creating Account...' : 'Create Account for Free'}
             </button>
           </form>
 

@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
@@ -64,21 +65,25 @@ export default function Login() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2 ml-1">
-                <label className="text-sm font-medium text-slate-400" htmlFor="password">Password</label>
-                <a href="#" className="text-xs font-semibold text-emerald-500 hover:text-emerald-400 transition-colors">Forgot Password?</a>
-              </div>
+              <label className="block text-sm font-medium text-slate-400 mb-2 ml-1" htmlFor="password">Password</label>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg">lock</span>
                 <input 
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#0f1115] border border-slate-800 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all appearance-none"
+                  className="w-full bg-[#0f1115] border border-slate-800 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all appearance-none"
                   placeholder="••••••••"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none flex items-center justify-center transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                </button>
               </div>
             </div>
 

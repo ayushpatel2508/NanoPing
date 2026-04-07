@@ -14,7 +14,7 @@ const setAuthCookies = async (res: Response, user: { id: string; name: string; e
 
   if (!accessSecret || !refreshSecret) {
     console.error("[AUTH ERROR] Missing JWT Secrets in environment variables.");
-    throw new Error("Internal server configuration error: Auth secrets missing.");
+    throw new Error("Internal server configuration error.");
   }
 
   const accessToken = jwt.sign(
@@ -86,7 +86,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const refreshSecret = process.env.JWT_REFRESH_SECRET;
     if (!accessSecret || !refreshSecret) {
       console.error("[AUTH] Missing JWT secrets on server.");
-      res.status(500).json({ status: "error", message: "Server configuration error: JWT secrets missing." });
+      res.status(500).json({ status: "error", message: "Internal server error" });
       return;
     }
 
@@ -114,7 +114,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     console.error("[AUTH] Registration error:", error);
     res.status(500).json({ 
       status: "error", 
-      message: error.message || "An internal server error occurred during registration" 
+      message: "An internal server error occurred" 
     });
   }
 };
@@ -164,7 +164,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     console.error("[AUTH] Login error:", err);
     res.status(500).json({ 
       status: "error", 
-      message: err.message || "Internal server error" 
+      message: "Internal server error" 
     });
   }
 };

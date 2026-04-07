@@ -17,7 +17,6 @@ export default function DashboardLayout() {
     { name: 'Incidents', path: '/dashboard/incidents', icon: 'security' },
     { name: 'Uptime history', path: '/dashboard/history', icon: 'history' },
     { name: 'Status pages', path: '/dashboard/status-pages', icon: 'sensors' },
-    { name: 'Maintenance', path: '/dashboard/maintenance', icon: 'calendar_clock' },
     { name: 'Logs', path: '/dashboard/logs', icon: 'receipt_long' },
   ];
 
