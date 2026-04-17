@@ -72,12 +72,12 @@ export const isLoggedIn = async (req: CustomRequest, res: Response, next: NextFu
       const cookieOptions: any = {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // M5 FIX: must match authController.ts
         path: "/"
       };
 
-      // Set for 24h in dev to avoid annoying frequent refreshes, but follow prod rules for prod
-      const accessMaxAge = process.env.NODE_ENV === "production" ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+      // M9 FIX: Always use 15-minute access token expiry for security
+      const accessMaxAge = 15 * 60 * 1000;
 
       res.cookie("accessToken", newAccessToken, {
         ...cookieOptions,

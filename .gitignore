@@ -30,3 +30,4 @@ scripts/
 seed*
 postgres-data/
 .tmp/
+skills-lock.json

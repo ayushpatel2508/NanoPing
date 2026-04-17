@@ -15,22 +15,26 @@ export default function Logs() {
   const { monitors, fetchMonitors } = useMonitorStore();
 
   const [checks, setChecks] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [monitorFilter, setMonitorFilter] = useState<string>('all');
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // Cursor state: stack of previous cursors for "go back" navigation
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);  // stack of cursors for previous pages
+  const [currentCursor, setCurrentCursor] = useState<string | null>(null); // cursor used for current page
+  const [hasMore, setHasMore] = useState(false);
+  const [pageNumber, setPageNumber] = useState(1);  // for display only
 
-  const load = useCallback(async (p: number) => {
+  const load = useCallback(async (cursor: string | null) => {
     try {
       setIsLoading(true);
       setError('');
-      const res = await dashboardApi.getGlobalChecks(p, PAGE_SIZE);
-      // res shape: { success, data: [...], total, page, limit }
+      const res = await dashboardApi.getGlobalChecks(PAGE_SIZE, cursor);
+      // res shape: { success, data: [...], nextCursor, hasMore, limit }
       setChecks(res?.data || []);
-      setTotal(res?.total || 0);
+      setNextCursor(res?.nextCursor || null);
+      setHasMore(res?.hasMore || false);
     } catch {
       setError('Failed to load ping history.');
     } finally {
@@ -42,13 +46,35 @@ export default function Logs() {
     fetchMonitors();
   }, [fetchMonitors]);
 
+  // Load first page on mount
   useEffect(() => {
-    load(page);
-  }, [page, load]);
+    load(null);
+  }, [load]);
 
-  const goTo = (p: number) => {
-    if (p < 1 || p > totalPages) return;
-    setPage(p);
+  const goToNext = () => {
+    if (!nextCursor || !hasMore) return;
+    // Push current cursor onto the stack before moving forward
+    setCursorStack(prev => [...prev, currentCursor]);
+    setCurrentCursor(nextCursor);
+    setPageNumber(prev => prev + 1);
+    load(nextCursor);
+  };
+
+  const goToPrev = () => {
+    if (cursorStack.length === 0) return;
+    const newStack = [...cursorStack];
+    const prevCursor = newStack.pop()!;
+    setCursorStack(newStack);
+    setCurrentCursor(prevCursor);
+    setPageNumber(prev => prev - 1);
+    load(prevCursor);
+  };
+
+  const goToFirst = () => {
+    setCursorStack([]);
+    setCurrentCursor(null);
+    setPageNumber(1);
+    load(null);
   };
 
   const filteredChecks = monitorFilter === 'all'
@@ -62,15 +88,6 @@ export default function Logs() {
     return Math.round(withTime.reduce((a: number, c: any) => a + c.response_time, 0) / withTime.length);
   })();
 
-  // Build page range to display (max 5 buttons)
-  const pageRange = (() => {
-    const range: number[] = [];
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + 4);
-    for (let i = start; i <= end; i++) range.push(i);
-    return range;
-  })();
-
   return (
     <div className="p-8">
       {/* Header */}
@@ -78,13 +95,13 @@ export default function Logs() {
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Ping Logs</h1>
           <p className="text-slate-400 text-sm mt-1">
-            Paginated ping history · showing page {page} of {totalPages} · {total} total records
+            Cursor-paginated ping history · page {pageNumber} · {PAGE_SIZE} per page
           </p>
         </div>
         {/* Monitor Filter */}
         <select
           value={monitorFilter}
-          onChange={(e) => { setMonitorFilter(e.target.value); setPage(1); }}
+          onChange={(e) => { setMonitorFilter(e.target.value); }}
           className="bg-[#1a1c23] border border-white/[0.08] text-slate-300 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500/50 transition-all"
         >
           <option value="all">All Monitors</option>
@@ -97,9 +114,9 @@ export default function Logs() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="bg-[#1a1c23] border border-white/[0.06] rounded-2xl p-5">
-          <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Total Records</div>
-          <div className="text-3xl font-extrabold text-white">{total}</div>
-          <div className="text-xs text-slate-500 mt-1">All ping history</div>
+          <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Page</div>
+          <div className="text-3xl font-extrabold text-white">{pageNumber}</div>
+          <div className="text-xs text-slate-500 mt-1">Current page</div>
         </div>
         <div className="bg-[#1a1c23] border border-emerald-500/10 rounded-2xl p-5">
           <div className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-2">Up (this page)</div>
@@ -142,7 +159,7 @@ export default function Logs() {
             </span>
           </span>
           <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+            Page {pageNumber} · {hasMore ? 'more available' : 'last page'}
           </span>
         </div>
 
@@ -200,49 +217,42 @@ export default function Logs() {
           </div>
         )}
 
-        {/* Pagination Controls */}
-        {!isLoading && !error && total > PAGE_SIZE && (
+        {/* Cursor Pagination Controls */}
+        {!isLoading && !error && (checks.length > 0 || pageNumber > 1) && (
           <div className="px-6 py-4 border-t border-white/[0.06] flex items-center justify-between bg-white/[0.02]">
-            <button
-              onClick={() => goTo(page - 1)}
-              disabled={page === 1}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            >
-              <span className="material-symbols-outlined text-base">chevron_left</span>
-              Prev
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToFirst}
+                disabled={pageNumber === 1}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <span className="material-symbols-outlined text-base">first_page</span>
+                First
+              </button>
+              <button
+                onClick={goToPrev}
+                disabled={pageNumber === 1}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <span className="material-symbols-outlined text-base">chevron_left</span>
+                Prev
+              </button>
+            </div>
 
-            <div className="flex items-center gap-1">
-              {pageRange[0] > 1 && (
-                <>
-                  <button onClick={() => goTo(1)} className="w-8 h-8 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all">1</button>
-                  {pageRange[0] > 2 && <span className="text-slate-600 text-xs px-1">···</span>}
-                </>
-              )}
-              {pageRange.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => goTo(p)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
-                    p === page
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              {pageRange[pageRange.length - 1] < totalPages && (
-                <>
-                  {pageRange[pageRange.length - 1] < totalPages - 1 && <span className="text-slate-600 text-xs px-1">···</span>}
-                  <button onClick={() => goTo(totalPages)} className="w-8 h-8 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all">{totalPages}</button>
-                </>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Page {pageNumber}
+              </span>
+              {hasMore && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 uppercase tracking-widest">
+                  More →
+                </span>
               )}
             </div>
 
             <button
-              onClick={() => goTo(page + 1)}
-              disabled={page === totalPages}
+              onClick={goToNext}
+              disabled={!hasMore}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
               Next

@@ -10,13 +10,16 @@ const extractHostname = (urlString: string) => {
   }
 };
 
+// UUID v4 validation regex
+const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 // GET /api/public/status/:userId
 export const getPublicStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { userId } = req.params;
+    const userId = req.params.userId as string;
 
-    if (!userId) {
-       res.status(400).json({ status: "error", message: "User ID is required" });
+    if (!userId || !isValidUUID(userId)) {
+       res.status(400).json({ status: "error", message: "Invalid or missing User ID" });
        return;
     }
 

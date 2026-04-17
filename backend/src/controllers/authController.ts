@@ -43,7 +43,7 @@ const setAuthCookies = async (res: Response, user: { id: string; name: string; e
     path: "/",
   };
 
-  const accessMaxAge = isProd ? 15 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  const accessMaxAge = 15 * 60 * 1000;
 
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
@@ -134,8 +134,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+
+
     if (!user_exist.password_hash) {
-      res.status(400).json({ status: "error", message: "Please log in using your Google/Clerk account." });
+      res.status(400).json({ status: "error", message: "Please log in using your Google account or set up a password." });
       return;
     }
 
@@ -203,49 +205,5 @@ export const logout = async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Logout err", err);
     res.status(500).json({ status: "error", message: "Internal server error" });
-  }
-};
-
-export const clerkSync = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { clerkId, email, name } = req.body;
-
-    if (!clerkId || !email) {
-      res.status(400).json({ status: "error", message: "Clerk ID and Email are required" });
-      return;
-    }
-
-    let user = await userModel.findByClerkId(clerkId);
-
-    if (!user) {
-      user = await userModel.findByEmail(email);
-
-      if (user) {
-        await userModel.updateClerkId(user.id, clerkId);
-        user.clerk_id = clerkId;
-      } else {
-        user = await userModel.createFromClerk(clerkId, email, name || "Clerk User");
-      }
-    }
-
-    // Set cookies using our helper
-    await setAuthCookies(res, user);
-
-    console.log(`[AUTH] Clerk user ${user.email} synced and logged in successfully.`);
-
-    res.status(200).json({
-      status: "success",
-      message: "Clerk sync successful",
-      data: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        clerk_id: user.clerk_id
-      }
-    });
-
-  } catch (err) {
-    console.error("Clerk sync error:", err);
-    res.status(500).json({ status: "error", message: "Internal server error during Clerk sync" });
   }
 };

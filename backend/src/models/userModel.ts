@@ -13,8 +13,9 @@ export interface User {
 
 export const userModel = {
   // Find a user by id
+  // Used by isLoggedIn middleware on EVERY request — never expose sensitive fields
   findById: async (id: string): Promise<User | null> => {
-    const query = `SELECT * FROM users WHERE id = $1`;
+    const query = `SELECT id, email, name, clerk_id, created_at FROM users WHERE id = $1`;
     const result = await pool.query(query, [id]);
     return result.rows[0] || null;
   },
@@ -44,29 +45,7 @@ export const userModel = {
     await pool.query(query, [refreshToken, id]);
   },
 
-  // Find a user by Clerk ID
-  findByClerkId: async (clerkId: string): Promise<User | null> => {
-    const query = `SELECT * FROM users WHERE clerk_id = $1`;
-    const result = await pool.query(query, [clerkId]);
-    return result.rows[0] || null;
-  },
 
-  // Create a user from Clerk Sync
-  createFromClerk: async (clerkId: string, email: string, name: string): Promise<User> => {
-    const query = `
-      INSERT INTO users (clerk_id, email, name, password_hash)
-      VALUES ($1, $2, $3, NULL)
-      RETURNING id, email, name, clerk_id, created_at;
-    `;
-    const result = await pool.query(query, [clerkId, email, name]);
-    return result.rows[0];
-  },
-
-  // Link an existing email account to a Clerk ID
-  updateClerkId: async (id: string, clerkId: string): Promise<void> => {
-    const query = `UPDATE users SET clerk_id = $1 WHERE id = $2`;
-    await pool.query(query, [clerkId, id]);
-  },
 
   // Update user's name
   updateName: async (id: string, name: string): Promise<User> => {

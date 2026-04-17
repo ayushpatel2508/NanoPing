@@ -140,13 +140,13 @@ export default function Landing() {
             </div>
             {/* Composite Mock Content */}
             <div className="p-8 flex flex-col md:flex-row gap-8 bg-gradient-to-b from-[#13161b] to-[#0a0c0f] relative overflow-hidden">
-              
+
               {/* Background Integrated Image */}
               <div className="absolute right-0 top-0 bottom-0 w-2/3 pointer-events-none opacity-40 mix-blend-lighten">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#13161b] via-[#13161b]/80 to-transparent z-10"></div>
-                <img 
-                  src="/dashboard-preview.png" 
-                  alt="" 
+                <img
+                  src="/dashboard-preview.png"
+                  alt=""
                   className="w-full h-full object-cover object-right translate-x-4"
                 />
               </div>
@@ -210,7 +210,7 @@ export default function Landing() {
               <p className="text-slate-400 max-w-2xl mx-auto">We don't just rely on simple pings. Our infrastructure actively guarantees precision tracking through a decentralized worker army.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               <div className="p-8 rounded-2xl bg-[#13161b] border border-slate-800/60 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500 group">
                 <div className="w-12 h-12 rounded-xl bg-slate-800 group-hover:bg-emerald-500/20 flex items-center justify-center mb-6 transition-colors">
                   <span className="material-symbols-outlined text-slate-400 group-hover:text-emerald-400">public</span>
@@ -219,20 +219,12 @@ export default function Landing() {
                 <p className="text-sm text-slate-400 leading-relaxed">NanoPing utilizes high-frequency background workers to track your endpoints with millisecond accuracy, ensuring you're the first to know when things slow down.</p>
               </div>
 
-              <div className="p-8 rounded-2xl bg-[#13161b] border border-slate-800/60 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500 group mt-0 md:mt-8">
+              <div className="p-8 rounded-2xl bg-[#13161b] border border-slate-800/60 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500 group">
                 <div className="w-12 h-12 rounded-xl bg-slate-800 group-hover:bg-emerald-500/20 flex items-center justify-center mb-6 transition-colors">
-                  <span className="material-symbols-outlined text-slate-400 group-hover:text-emerald-400">lock</span>
+                  <span className="material-symbols-outlined text-slate-400 group-hover:text-emerald-400">mark_email_unread</span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Military-Grade Encryption</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">All telemetry data and webhook secrets are encrypted at rest using AES-256. Your credentials for integrated alerts never leave our fortified database.</p>
-              </div>
-
-              <div className="p-8 rounded-2xl bg-[#13161b] border border-slate-800/60 hover:border-emerald-500/30 hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500 group mt-0 md:mt-16">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 group-hover:bg-emerald-500/20 flex items-center justify-center mb-6 transition-colors">
-                  <span className="material-symbols-outlined text-slate-400 group-hover:text-emerald-400">web</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Custom Status Pages</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">Convert our raw ping logs into a beautiful, customer-facing portal under your own domain. Keep your users in the loop automatically when APIs drop.</p>
+                <h3 className="text-xl font-bold text-white mb-3">Instant Incident Alerts</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">Never be the last to know. NanoPing sends automated email notifications the exact second your endpoints drop, allowing you to recover before users ever notice.</p>
               </div>
             </div>
           </div>

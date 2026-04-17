@@ -1,13 +1,17 @@
 import express from "express";
-import { register, login, getUser, logout, clerkSync } from "../controllers/authController.js";
+import { register, login, getUser, logout } from "../controllers/authController.js";
 import { isLoggedIn } from "../middlewares/isLoggedIn.js";
+import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", login);
+// Strict rate limit on credential endpoints (5 req/15min, skips successful requests)
+router.post("/register", authLimiter, register);
+router.post("/login", authLimiter, login);
+
+
+// These require valid tokens, so global limiter is sufficient
 router.get("/me", isLoggedIn, getUser);
 router.post("/logout", logout);
-router.post("/clerk-sync", clerkSync);
 
 export default router;

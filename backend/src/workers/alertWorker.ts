@@ -26,6 +26,11 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
     const userEmail = userQuery.rows[0]?.email;
     if (!userEmail) throw new Error(`Could not find owner email for monitor ${monitorId}`);
 
+    // M7 FIX: HTML-escape user-supplied URL before injecting into email template
+    const escapeHtml = (str: string) =>
+      str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const safeUrl = escapeHtml(url);
+
     // 2. Construct the Email Templates
     const subject = isDownAlert 
         ? `🔴 URGENT: Your website ${url} is down!` 
@@ -45,12 +50,12 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
         <h1 style="color: #0f172a; font-size: 24px; margin-bottom: 10px; text-align: center;">${isDownAlert ? 'Action Required: Outage Detected' : 'Website Restored'}</h1>
         
         <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
-          Our monitoring engine has detected that <b><a href="${url}" style="color: ${primaryColor}; text-decoration: none;">${url}</a></b> ${isDownAlert ? 'has failed multiple health checks and is currently unresponsive.' : 'is back online and responding normally.'}
+          Our monitoring engine has detected that <b><a href="${safeUrl}" style="color: ${primaryColor}; text-decoration: none;">${safeUrl}</a></b> ${isDownAlert ? 'has failed multiple health checks and is currently unresponsive.' : 'is back online and responding normally.'}
         </p>
 
         <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
           <div style="margin-bottom: 10px; font-size: 14px; color: #64748b;">TARGET URL</div>
-          <div style="font-family: monospace; font-size: 16px; color: #0f172a; word-break: break-all;">${url}</div>
+          <div style="font-family: monospace; font-size: 16px; color: #0f172a; word-break: break-all;">${safeUrl}</div>
         </div>
 
         <div style="text-align: center;">
@@ -61,7 +66,7 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
 
         <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
         <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-          You're receiving this because you enabled monitoring for ${url}.<br>
+          You're receiving this because you enabled monitoring for ${safeUrl}.<br>
           &copy; ${new Date().getFullYear()} NanoPing Monitoring.
         </p>
       </div>

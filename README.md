@@ -6,7 +6,7 @@ A distributed, real-time website monitoring engine designed for scale and reliab
 - **Distributed Monitoring Engine**: Decoupled worker architecture using Redis and BullMQ to handle hundreds of concurrent pings without blocking the main event loop.
 - **Wait-Free Logging Architecture**: High-frequency ping logs are first buffered in Redis and asynchronously bulk-inserted into PostgreSQL every 30 seconds to minimize database I/O pressure.
 - **Event-Driven Real-time Updates**: Instant status refreshes and "Render-style" live logs powered by Socket.IO room-based broadcasting.
-- **Hybrid Auth Strategy**: Seamlessly integrates secure JWT-based manual authentication with Clerk OAuth providers.
+- **Secure JWT Authentication**: JWT-based authentication with refresh tokens and HTTP-only cookies for enhanced security.
 - **Intelligent Alerting**: Multi-threshold failure tracking (Email) with built-in idempotency to prevent duplicate notifications during network instability.
 
 ---
@@ -14,7 +14,7 @@ A distributed, real-time website monitoring engine designed for scale and reliab
 ## 🛠 Tech Stack
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Lucide, Clerk SDK |
+| **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Lucide |
 | **Backend** | Node.js (v18+), Express 5, Socket.IO, BullMQ, Axios |
 | **Persistence** | PostgreSQL (Relational Data), Redis (Queue & High-speed Cache) |
 | **DevOps** | Docker, Docker Compose, GitHub Actions |
@@ -58,9 +58,9 @@ We use a **Selective Caching** layer for the Dashboard. Common views are cached 
 
 ### Auth & User
 - `POST /api/auth/login` - Request JWT session
-- `POST /api/auth/register` - Create manual account
-- `POST /api/auth/clerk-sync` - Sync OAuth session (Clerk)
+- `POST /api/auth/register` - Create account
 - `GET /api/auth/me` - Profile context
+- `POST /api/auth/logout` - Clear session
 
 ### Monitoring
 - `POST /api/monitors` - Add new target URL

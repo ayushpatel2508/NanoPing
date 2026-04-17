@@ -5,8 +5,10 @@ export const dashboardApi = {
     const response = await api.get('/dashboard/summary');
     return response.data;
   },
-  getRecentChecks: async (id: string, limit = 50) => {
-    const response = await api.get(`/dashboard/${id}/checks?limit=${limit}`);
+  getRecentChecks: async (id: string, limit = 50, cursor?: string | null) => {
+    let url = `/dashboard/${id}/checks?limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    const response = await api.get(url);
     return response.data;
   },
   getMonitorStats: async (id: string, days = 30) => {
@@ -17,8 +19,10 @@ export const dashboardApi = {
     const response = await api.get(`/dashboard/${id}/incidents?limit=${limit}`);
     return response.data;
   },
-  getGlobalChecks: async (page = 1, limit = 20) => {
-    const response = await api.get(`/dashboard/global-checks?page=${page}&limit=${limit}`);
+  getGlobalChecks: async (limit = 20, cursor?: string | null) => {
+    let url = `/dashboard/global-checks?limit=${limit}`;
+    if (cursor) url += `&cursor=${cursor}`;
+    const response = await api.get(url);
     return response.data;
   },
   getGlobalStats: async (days = 30) => {

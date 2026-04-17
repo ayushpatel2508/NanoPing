@@ -5,14 +5,18 @@ coverage/
 
 # Environment Variables
 .env
-.env.*.local
+.env.*
+!.env.example
+!.env.test.example
 
 # Documentation, Tasks and Logs
 *.md
+!README.md
 CLAUDE.md
 GEMINI.md
 agents.md
 *.txt
+
 
 # Project specific
 .agent/

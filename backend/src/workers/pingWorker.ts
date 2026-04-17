@@ -3,6 +3,7 @@ import redisConnection from "../config/redis.js";
 import pool from "../config/db.js";
 import { alertQueue } from "./queues.js";
 import { getIO } from "../config/socket.js";
+import { getAlertDecision } from "../utils/alertLogic.js";
 
 // This worker listens to the "pings" Redis queue
 export const pingWorker = new Worker("pings", async (job: Job) => {
@@ -95,9 +96,10 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
     });
   } catch (err) {}
 
-  // 4. CORE LOGIC: Does this trigger a new Alert?
-  // Only trigger the exact moment it hits the threshold! If > threshold, email is already sent.
-  if (status === "down" && consecutiveFailures === alertThreshold) {
+  // 4. CORE LOGIC: Does this trigger a new Alert or Resolve an old one?
+  const decision = getAlertDecision(status, consecutiveFailures, alertThreshold);
+
+  if (decision === 'START_INCIDENT') {
     
       const incident = await pool.query("SELECT id FROM incidents WHERE monitor_id = $1 AND is_resolved = false", [monitorId]);
       
@@ -133,7 +135,7 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
          );
       }
 
-  } else if (status === "up") {
+  } else if (decision === 'RESOLVE_INCIDENT') {
       // 4. CORE LOGIC: Does this RESOLVE an old Incident?
       const resolved = await pool.query(`
          UPDATE incidents 

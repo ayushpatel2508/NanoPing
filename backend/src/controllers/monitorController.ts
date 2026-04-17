@@ -2,18 +2,17 @@ import type { Response } from "express";
 import { monitorModel } from "../models/monitorModel.js";
 import type { CustomRequest } from "../middlewares/isLoggedIn.js";
 import redisConnection from "../config/redis.js";
+import pool from "../config/db.js";
+import { isValidUrl } from "../utils/validation.js";
 
-// Helper for URL validation
-const isValidUrl = (urlString: string) => {
+const invalidateUserCache = async (userId: string | number) => {
   try {
-    const url = new URL(urlString);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch (e) {
-    return false;
+    await redisConnection.del(`user:${userId}:monitors_cache`);
+  } catch (err) {
+    console.warn(`[Redis] Non-fatal error: Failed to clear cache for user ${userId}`, err);
   }
 };
 
-// ... existing code ...
 
 // POST /api/monitors
 export const createMonitor = async (req: CustomRequest, res: Response): Promise<void> => {
@@ -21,6 +20,13 @@ export const createMonitor = async (req: CustomRequest, res: Response): Promise<
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ status: "error", message: "Unauthorized" });
+      return;
+    }
+
+    const MAX_MONITORS_PER_USER = 50;
+    const countResult = await pool.query('SELECT COUNT(*)::int AS count FROM monitors WHERE user_id = $1', [userId]);
+    if (countResult.rows[0].count >= MAX_MONITORS_PER_USER) {
+      res.status(403).json({ status: "error", message: `Monitor limit reached. Maximum ${MAX_MONITORS_PER_USER} monitors allowed per account.` });
       return;
     }
 
@@ -48,8 +54,8 @@ export const createMonitor = async (req: CustomRequest, res: Response): Promise<
 
     const monitor = await monitorModel.create(userId, name, url, check_interval, alert_threshold);
     
-    // Invalidate dashboard cache for this user since they added a new monitor
-    await redisConnection.del(`user:${userId}:monitors_cache`);
+    // Invalidate dashboard cache safely
+    await invalidateUserCache(userId);
 
     res.status(201).json({ status: "success", data: monitor });
   } catch (err) {
@@ -172,8 +178,8 @@ export const updateMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    // Invalidate dashboard cache
-    await redisConnection.del(`user:${userId}:monitors_cache`);
+    // Invalidate dashboard cache safely
+    await invalidateUserCache(userId);
 
     res.status(200).json({ status: "success", data: updatedMonitor });
   } catch (err) {
@@ -210,8 +216,8 @@ export const toggleMonitorStatus = async (req: CustomRequest, res: Response): Pr
       return;
     }
 
-    // Invalidate dashboard cache
-    await redisConnection.del(`user:${userId}:monitors_cache`);
+    // Invalidate dashboard cache safely
+    await invalidateUserCache(userId);
 
     res.status(200).json({ 
       status: "success", 
@@ -246,8 +252,8 @@ export const deleteMonitor = async (req: CustomRequest, res: Response): Promise<
       return;
     }
 
-    // Invalidate dashboard cache
-    await redisConnection.del(`user:${userId}:monitors_cache`);
+    // Invalidate dashboard cache safely
+    await invalidateUserCache(userId);
 
     res.status(200).json({ status: "success", message: "Monitor deleted" });
   } catch (err) {
