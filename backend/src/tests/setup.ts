@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 
 // Load .env.test
-dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test'), override: true });
 
 // Silence logs during tests
 // console.log = vi.fn();

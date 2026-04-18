@@ -281,7 +281,7 @@ export default function Landing() {
                 <div className="bg-[#13161b] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden font-mono text-xs sm:text-sm hover:border-slate-600 transition-colors duration-500">
                   <div className="border-b border-slate-800 bg-[#16191f] px-4 py-3 flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span className="text-slate-300 font-sans font-medium text-sm">BullMQ Worker Analytics</span>
+                    <span className="text-slate-300 font-sans font-medium text-sm">Demo Logs</span>
                   </div>
                   <div id="terminal-mock" className="p-6 space-y-4 min-h-[340px]">
                     <style>{`
