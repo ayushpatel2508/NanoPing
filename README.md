@@ -5,7 +5,7 @@ A distributed, real-time website monitoring engine designed for scale and reliab
 ##  Features
 - **Distributed Monitoring Engine**: Decoupled worker architecture using Redis and BullMQ to handle hundreds of concurrent pings without blocking the main event loop.
 - **Wait-Free Logging Architecture**: High-frequency ping logs are first buffered in Redis and asynchronously bulk-inserted into PostgreSQL every 30 seconds to minimize database I/O pressure.
-- **Event-Driven Real-time Updates**: Instant status refreshes and "Render-style" live logs powered by Socket.IO room-based broadcasting.
+- **Event-Driven Real-time Updates**: Instant status refreshes and live logs powered by Socket.IO room-based broadcasting.
 - **Secure JWT Authentication**: JWT-based authentication with refresh tokens and HTTP-only cookies for enhanced security.
 - **Intelligent Alerting**: Multi-threshold failure tracking (Email) with built-in idempotency to prevent duplicate notifications during network instability.
 
@@ -18,7 +18,7 @@ A distributed, real-time website monitoring engine designed for scale and reliab
 | Layer | Technologies |
 | :--- | :--- |
 | **Frontend** | React 18, Vite, Tailwind CSS, Recharts, Lucide |
-| **Backend** | Node.js (v18+), Express 5, Socket.IO, BullMQ, Axios |
+| **Backend** | Node.js, Express , Socket.IO, BullMQ, Axios |
 | **Persistence** | PostgreSQL (Relational Data), Redis (Queue & High-speed Cache) |
 | **DevOps** | Docker|
 
