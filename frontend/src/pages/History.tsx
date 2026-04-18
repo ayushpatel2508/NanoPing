@@ -5,8 +5,6 @@ import { dashboardApi } from '../api/dashboard';
 import { 
     ResponseTimeChart, 
     UptimeBarChart, 
-    StatusPieChart, 
-    HeartbeatTimeline 
 } from '../components/Charts';
 
 export default function History() {
@@ -39,120 +37,108 @@ export default function History() {
 
   if (loading && monitors.length === 0) {
     return (
-      <div className="p-8 flex items-center justify-center h-full">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <p className="text-slate-400 font-medium">Loading history...</p>
+      <div className="p-6 lg:p-8 flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-slate-500 text-[13px]">Loading history...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-6 lg:p-8 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Uptime History</h1>
-          <p className="text-slate-400 mt-1">Detailed performance metrics for all your monitors</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Uptime History</h1>
+          <p className="text-slate-500 text-[13px] mt-0.5">Performance metrics and trends for all monitors</p>
         </div>
-        <div className="flex bg-[#0f1115] rounded-xl p-1 border border-[#1e2028]">
+        <div className="flex bg-[#16181e] rounded-md p-0.5 border border-white/[0.04]">
           {[7, 30, 90].map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                days === d ? 'bg-[#1a1c23] text-emerald-400 shadow-lg border border-emerald-500/10' : 'text-slate-500 hover:text-slate-300'
+              className={`px-3 py-1.5 rounded-[5px] text-[12px] font-medium transition-all duration-150 ${
+                days === d ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
               }`}
             >
-              {d === 7 ? '7 Days' : d === 30 ? '30 Days' : '90 Days'}
+              {d}d
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid gap-8">
-        {monitors.map((monitor) => {
+      <div className="space-y-4">
+        {monitors.map((monitor: any) => {
           const stats = getMonitorStats(monitor.id);
-          const lastCheck = monitor.last_check_status || 'unknown';
+          const avgUptime = stats.length > 0
+            ? (stats.reduce((a: number, s: any) => a + parseFloat(s.uptime_percentage || 0), 0) / stats.length).toFixed(2)
+            : '--';
+          const avgRT = stats.length > 0
+            ? Math.round(stats.reduce((a: number, s: any) => a + parseFloat(s.avg_response_time || 0), 0) / stats.length)
+            : 0;
+          const totalChecks = stats.reduce((a: number, s: any) => a + (s.total_checks || 0), 0);
+
+          const isUp = monitor.is_active && monitor.last_status === 'up';
           
           return (
-            <div key={monitor.id} className="bg-[#0f1115] rounded-2xl border border-[#1e2028] overflow-hidden hover:border-[#2a2d36] transition-all shadow-xl group">
-              {/* Monitor Info Bar */}
-              <div className="px-6 py-4 bg-[#13151b] border-b border-[#1e2028] flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-3 h-3 rounded-full ${lastCheck === 'up' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]'}`} />
+            <div key={monitor.id} className="bg-[#16181e] border border-white/[0.04] rounded-lg overflow-hidden hover:border-white/[0.06] transition-all duration-200 group">
+              {/* Monitor Header */}
+              <div className="px-5 py-4 border-b border-white/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${isUp ? 'bg-emerald-500' : monitor.is_active ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`} />
                   <div>
-                    <h3 className="font-bold text-white group-hover:text-emerald-400 transition-colors uppercase tracking-wider text-sm">{monitor.name}</h3>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">{monitor.url}</p>
+                    <h3 className="text-[14px] font-semibold text-white group-hover:text-emerald-400 transition-colors duration-150">{monitor.name}</h3>
+                    <p className="text-[11px] text-slate-600 font-mono mt-0.5">{monitor.url}</p>
                   </div>
                 </div>
-                <Link 
-                  to={`/dashboard/monitors/${monitor.id}`}
-                  className="px-4 py-1.5 bg-[#1a1c23] hover:bg-[#2a2d36] text-slate-300 hover:text-white text-xs font-bold rounded-lg border border-[#1e2028] transition-all"
-                >
-                  VIEW DETAILS
-                </Link>
+                <div className="flex items-center gap-4">
+                  {/* Quick Stats */}
+                  <div className="hidden sm:flex items-center gap-4 mr-2">
+                    <div className="text-right">
+                      <div className={`text-[14px] font-bold tabular-nums ${
+                        avgUptime === '--' ? 'text-slate-600' :
+                        parseFloat(avgUptime) >= 99 ? 'text-emerald-400' :
+                        parseFloat(avgUptime) >= 95 ? 'text-amber-400' : 'text-red-400'
+                      }`}>{avgUptime}{avgUptime !== '--' ? '%' : ''}</div>
+                      <div className="text-[10px] text-slate-600">uptime</div>
+                    </div>
+                    <div className="w-px h-6 bg-white/[0.06]" />
+                    <div className="text-right">
+                      <div className="text-[14px] font-bold text-sky-400 tabular-nums">{avgRT}<span className="text-[10px] text-slate-600 ml-0.5">ms</span></div>
+                      <div className="text-[10px] text-slate-600">avg</div>
+                    </div>
+                    <div className="w-px h-6 bg-white/[0.06]" />
+                    <div className="text-right">
+                      <div className="text-[14px] font-bold text-white tabular-nums">{totalChecks.toLocaleString()}</div>
+                      <div className="text-[10px] text-slate-600">checks</div>
+                    </div>
+                  </div>
+                  <Link 
+                    to={`/dashboard/${monitor.id}`}
+                    className="px-3 py-1.5 text-[11px] font-medium text-slate-500 hover:text-emerald-400 bg-white/[0.03] hover:bg-emerald-500/10 border border-white/[0.04] hover:border-emerald-500/20 rounded-md transition-all duration-150"
+                  >
+                    Details
+                  </Link>
+                </div>
               </div>
 
-              {/* Graphs Grid */}
-              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Response Time Area */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-400 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">speed</span>
-                      RESPONSE TIME
-                    </h4>
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-white/[0.04]">
+                <div className="bg-[#16181e] p-5">
+                  <div className="text-[11px] text-slate-500 font-medium mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">show_chart</span>
+                    Response Time
                   </div>
-                  <div className="bg-[#13151b] rounded-xl p-4 border border-[#1a1c23]">
-                    <ResponseTimeChart data={stats} />
-                  </div>
+                  <ResponseTimeChart data={stats} />
                 </div>
-
-                {/* Uptime Bar Chart */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-400 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                      DAILY UPTIME
-                    </h4>
+                <div className="bg-[#16181e] p-5">
+                  <div className="text-[11px] text-slate-500 font-medium mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">bar_chart</span>
+                    Daily Uptime
                   </div>
-                  <div className="bg-[#13151b] rounded-xl p-4 border border-[#1a1c23]">
-                    <UptimeBarChart data={stats} />
-                  </div>
-                </div>
-
-                {/* Status Distribution Pie */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-400 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">donut_large</span>
-                      CHECK DISTRIBUTION
-                    </h4>
-                  </div>
-                  <div className="bg-[#13151b] rounded-xl p-4 border border-[#1a1c23]">
-                    {/* Note: In a real app, we'd fetch recent checks for each monitor. 
-                        For this view, we can derive a simpler distribution from the historical stats if needed,
-                        or just pass empty if we don't have raw checks. In History.tsx, we'll fetch them or use dummy.
-                    */}
-                    <StatusPieChart checks={[]} />
-                    <p className="text-[10px] text-slate-600 mt-2 text-center">Visit monitor details for full distribution breakdown.</p>
-                  </div>
-                </div>
-
-                {/* Heartbeat / Timeline placeholder */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-400 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[18px]">monitoring</span>
-                      RECENT HEARTBEAT
-                    </h4>
-                  </div>
-                  <div className="bg-[#13151b] rounded-xl p-4 border border-[#1a1c23] h-[192px] flex flex-col justify-center">
-                     <HeartbeatTimeline checks={[]} />
-                     <p className="text-[10px] text-slate-600 mt-4 text-center italic">Live heartbeat timeline is available in the individual monitor view.</p>
-                  </div>
+                  <UptimeBarChart data={stats} />
                 </div>
               </div>
             </div>
@@ -160,13 +146,13 @@ export default function History() {
         })}
 
         {monitors.length === 0 && (
-          <div className="bg-[#0f1115] rounded-3xl border border-dashed border-[#1e2028] p-20 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
-              <span className="material-symbols-outlined text-4xl text-emerald-500">add_moderator</span>
+          <div className="bg-[#16181e] border border-dashed border-white/[0.06] rounded-lg p-16 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-lg bg-white/[0.03] flex items-center justify-center mb-4">
+              <span className="material-symbols-outlined text-2xl text-slate-700">monitoring</span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">No monitors yet</h2>
-            <p className="text-slate-400 max-w-sm mb-8">Start tracking your websites and APIs to see their historical performance here.</p>
-            <Link to="/dashboard" className="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20">
+            <h2 className="text-lg font-bold text-white mb-1">No monitors yet</h2>
+            <p className="text-[13px] text-slate-500 max-w-sm mb-6">Start tracking your websites and APIs to see performance history.</p>
+            <Link to="/dashboard" className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-[#0a0a0a] font-semibold rounded-md text-[13px] transition-all">
               Create First Monitor
             </Link>
           </div>

@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import jwt from "jsonwebtoken";
 import pool from "./db.js";
+import { config } from "./env.js";
 
 let io: Server;
 
@@ -20,7 +21,7 @@ const parseCookies = (cookieHeader: string | undefined): Record<string, string> 
 export const initSocket = (httpServer: HttpServer) => {
     io = new Server(httpServer, {
         cors: {
-            origin: process.env.FRONTEND_URL || "http://localhost:5173",
+            origin: config.corsOrigins,
             methods: ["GET", "POST"],
             credentials: true
         }

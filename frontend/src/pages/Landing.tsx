@@ -167,7 +167,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-white tracking-tight group-hover/item:text-emerald-400 transition-colors">Backend Payment API</h3>
-                    <p className="text-xs text-slate-500">Cron executing via Redis Queue • every 60s</p>
+                    <p className="text-xs text-slate-500">Checks every 60s</p>
                   </div>
                   <div className="ml-auto text-right">
                     <div className="text-3xl font-black text-emerald-400 tracking-tighter">99.98%</div>

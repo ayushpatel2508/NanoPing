@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { BACKEND_URL } from '../config/env';
 
 export const useSocket = (monitorId?: string) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -7,7 +8,7 @@ export const useSocket = (monitorId?: string) => {
 
   useEffect(() => {
     // Connect to the API URL if provided, otherwise default to current origin
-    const socketUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    const socketUrl = BACKEND_URL;
     
     const s = io(socketUrl, {
       path: '/socket.io',

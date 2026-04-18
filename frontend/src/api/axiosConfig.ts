@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { BACKEND_URL } from '../config/env';
 
 const api = axios.create({
-  // Use VITE_API_URL if defined, otherwise fallback to '/api' for proxy/relative use
-  baseURL: import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api',
+  // Automatically routes to localhost:3000 in dev or VITE_API_URL in production
+  baseURL: `${BACKEND_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },

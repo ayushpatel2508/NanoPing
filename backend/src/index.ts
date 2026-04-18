@@ -7,6 +7,7 @@ import { globalLimiter } from "./middlewares/rateLimiter.js";
 
 dotenv.config();
 
+import { config } from "./config/env.js";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import monitorRoutes from "./routes/monitorRoutes.js";
@@ -25,7 +26,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: config.corsOrigins,
     credentials: true,
 }));
 app.use(express.json({ limit: '10kb' }));
@@ -55,8 +56,9 @@ if (!process.env.NODE_ENV) {
 const server = app.listen(process.env.PORT, () => {
     const mode = process.env.NODE_ENV || 'development';
     console.log(` NanoPing Server is running on port ${process.env.PORT} in ${mode.toUpperCase()} mode`);
+    console.log(` CORS origins allowed: ${Array.isArray(config.corsOrigins) ? config.corsOrigins.join(', ') : config.corsOrigins}`);
     
-    if (mode === 'production') {
+    if (config.isProd) {
         console.log(" Production security features (Secure Cookies, Strict CORS) are ENABLED.");
     }
 

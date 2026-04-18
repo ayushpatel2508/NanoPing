@@ -104,4 +104,79 @@ const decodeCursor = (token: string): { checked_at: string; id: string } | null 
         }
     }
 
+    // GET /api/dashboard/global-checks?limit=20&cursor=<token>
+    export const getGlobalChecks = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 20, 100);
 
+            // Support cursor-based pagination for global checks too
+            const cursorToken = req.query.cursor as string | undefined;
+            const cursor = cursorToken ? decodeCursor(cursorToken) : undefined;
+
+            if (cursorToken && !cursor) {
+                return res.status(400).json({ success: false, message: "Invalid cursor token." });
+            }
+
+            const result = await dashboardModel.getGlobalRecentChecks(userId, limit, cursor || undefined);
+
+            // Build the next cursor from the last row
+            const lastRow = result.checks[result.checks.length - 1];
+            const nextCursor = result.hasMore && lastRow
+                ? encodeCursor(lastRow.checked_at, String(lastRow.id))
+                : null;
+
+            res.json({
+                success: true,
+                data: result.checks,
+                nextCursor,
+                hasMore: result.hasMore,
+                limit
+            });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalChecks error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global check logs." });
+        }
+    }
+
+    // GET /api/dashboard/global-stats?days=30
+    export const getGlobalStats = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const days = Math.min(parseInt(String(req.query.days || "")) || 30, 90);
+
+            const stats = await dashboardModel.getGlobalStats(userId, days);
+            res.json({ success: true, data: stats });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalStats error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global stats." });
+        }
+    }
+
+    // GET /api/dashboard/global-incidents?limit=20
+    export const getGlobalIncidents = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const limit = Math.min(parseInt(String(req.query.limit || "")) || 20, 100);
+
+            const incidents = await dashboardModel.getGlobalIncidents(userId, limit);
+            res.json({ success: true, data: incidents });
+        } catch (error) {
+            console.error("[Dashboard] getGlobalIncidents error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch global incidents." });
+        }
+    }
+
+    // GET /api/dashboard/all-monitor-stats?days=30
+    export const getAllMonitorStats = async (req: Request, res: Response) => {
+        try {
+            const userId = String((req as CustomRequest).user?.id);
+            const days = Math.min(parseInt(String(req.query.days || "")) || 30, 90);
+
+            const stats = await dashboardModel.getAllMonitorStats(userId, days);
+            res.json({ success: true, data: stats });
+        } catch (error) {
+            console.error("[Dashboard] getAllMonitorStats error:", error);
+            res.status(500).json({ success: false, message: "Failed to fetch all monitor stats." });
+        }
+    }

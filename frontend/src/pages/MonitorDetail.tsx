@@ -641,7 +641,7 @@ export default function MonitorDetail() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-xl font-bold text-white tracking-tight group-hover/item:text-emerald-400 transition-colors uppercase">{monitor.name}</h3>
-                <p className="text-xs text-slate-500 mt-1">Cron executing via Redis Queue • every {monitor.check_interval}s</p>
+                <p className="text-xs text-slate-500 mt-1">Checks every {monitor.check_interval}m</p>
               </div>
               <div className="ml-auto text-right">
                 <div className="text-4xl font-black text-emerald-400 tracking-tighter">{uptimePercent}%</div>

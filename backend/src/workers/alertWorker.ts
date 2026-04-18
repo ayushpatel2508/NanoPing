@@ -1,6 +1,7 @@
 import { Worker, type Job } from "bullmq";
 import redisConnection from "../config/redis.js";
 import  pool  from "../config/db.js";
+import { config } from "../config/env.js";
 
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -59,7 +60,7 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
         </div>
 
         <div style="text-align: center;">
-          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard" style="display: inline-block; background: #0f172a; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
+          <a href="${config.frontendUrl}/dashboard" style="display: inline-block; background: #0f172a; color: white; padding: 12px 25px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">
             View Detailed Analytics
           </a>
         </div>
