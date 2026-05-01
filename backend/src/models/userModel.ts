@@ -1,4 +1,4 @@
-import pool from "../config/db.js";
+import prisma from "../config/prisma.js";
 
 // Interface for what we get back from the DB
 export interface User {
@@ -11,61 +11,96 @@ export interface User {
   created_at: Date;
 }
 
+const mapToLegacy = (u: any): User => ({
+  id: u.id,
+  email: u.email,
+  password_hash: u.passwordHash,
+  clerk_id: u.clerkId,
+  name: u.name,
+  refresh_token: u.refreshToken,
+  created_at: u.createdAt,
+});
+
 export const userModel = {
   // Find a user by id
-  // Used by isLoggedIn middleware on EVERY request — never expose sensitive fields
   findById: async (id: string): Promise<User | null> => {
-    const query = `SELECT id, email, name, clerk_id, created_at FROM users WHERE id = $1`;
-    const result = await pool.query(query, [id]);
-    return result.rows[0] || null;
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        clerkId: true,
+        createdAt: true
+      }
+    });
+    return user ? mapToLegacy(user) : null;
   },
 
   // Find a user by email
   findByEmail: async (email: string): Promise<User | null> => {
-    const query = `SELECT * FROM users WHERE email = $1`;
-    const result = await pool.query(query, [email]);
-    return result.rows[0] || null;
+    const user = await prisma.user.findUnique({
+       where: { email }
+    });
+    return user ? mapToLegacy(user) : null;
   },
 
   // Create a new user (Manual registration)
-  // [ATOMIC] Accepts refreshToken to insert in a single query
   create: async (email: string, passwordHash: string, name: string, refreshToken?: string): Promise<User> => {
-    const query = `
-      INSERT INTO users (email, password_hash, name, refresh_token)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, email, name, created_at;
-    `;
-    const result = await pool.query(query, [email, passwordHash, name, refreshToken || null]);
-    return result.rows[0];
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        name,
+        refreshToken: refreshToken || null
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true
+      }
+    });
+    return mapToLegacy(user);
   },
 
   // Update the refresh token for a user
   updateRefreshToken: async (id: string, refreshToken: string | null): Promise<void> => {
-    const query = `UPDATE users SET refresh_token = $1 WHERE id = $2`;
-    await pool.query(query, [refreshToken, id]);
+    await prisma.user.update({
+      where: { id },
+      data: { refreshToken }
+    });
   },
-
-
 
   // Update user's name
   updateName: async (id: string, name: string): Promise<User> => {
-    const query = `
-      UPDATE users SET name = $1 WHERE id = $2
-      RETURNING id, email, name, clerk_id, created_at;
-    `;
-    const result = await pool.query(query, [name, id]);
-    return result.rows[0];
+    const user = await prisma.user.update({
+      where: { id },
+      data: { name },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        clerkId: true,
+        createdAt: true
+      }
+    });
+    return mapToLegacy(user);
   },
 
   // Update user's password hash
   updatePassword: async (id: string, passwordHash: string): Promise<void> => {
-    const query = `UPDATE users SET password_hash = $1 WHERE id = $2`;
-    await pool.query(query, [passwordHash, id]);
+    await prisma.user.update({
+      where: { id },
+      data: { passwordHash }
+    });
   },
 
-  // Delete user account (CASCADE takes care of monitors, checks, incidents)
+  // Delete user account
   deleteUser: async (id: string): Promise<void> => {
-    const query = `DELETE FROM users WHERE id = $1`;
-    await pool.query(query, [id]);
+    await prisma.user.delete({
+      where: { id }
+    });
   }
 };
+

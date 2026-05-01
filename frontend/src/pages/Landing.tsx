@@ -72,9 +72,6 @@ export default function Landing() {
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-            <a href="#features" className="hover:text-emerald-400 transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-emerald-400 transition-colors">Pricing</a>
-            <a href="#status-demo" className="hover:text-emerald-400 transition-colors">Status Pages</a>
           </div>
 
           <div className="flex items-center gap-6">
@@ -97,14 +94,7 @@ export default function Landing() {
       {/* Hero Section */}
       <Skeleton name="landing-hero" loading={isLoading}>
         <header className="container mx-auto px-6 pt-32 pb-16 text-center max-w-5xl relative z-10 animate-[fade-in_1.5s_ease-out]">
-          <div className="inline-flex items-center gap-2 bg-[#1a1c23] border border-slate-800 rounded-full px-4 py-1.5 mb-10 shadow-lg hover:border-slate-600 transition-colors cursor-default">
-            <div className="flex -space-x-2">
-              <div className="w-5 h-5 rounded-full bg-orange-500 border border-[#1a1c23] animate-pulse"></div>
-              <div className="w-5 h-5 rounded-full bg-blue-500 border border-[#1a1c23] animate-pulse" style={{ animationDelay: '200ms' }}></div>
-              <div className="w-5 h-5 rounded-full bg-purple-500 border border-[#1a1c23] animate-pulse" style={{ animationDelay: '400ms' }}></div>
-            </div>
-            <span className="text-xs font-medium text-slate-400">Trusted by Indie Hackers & Operations Teams.</span>
-          </div>
+
 
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight drop-shadow-2xl">
             Absolute Visibility. <br className="hidden md:block" />

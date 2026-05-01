@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Check {
+  id           BigInt    @id @default(autoincrement())
+  monitorId    String?   @map("monitor_id") @db.Uuid
+  status       String
+  statusCode   Int?      @map("status_code")
+  responseTime Int?      @map("response_time")
+  message      String?
+  checkedAt    DateTime? @default(now()) @map("checked_at") @db.Timestamp(6)
+  monitor      Monitor?  @relation(fields: [monitorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([monitorId, checkedAt(sort: Desc)], map: "idx_checks_monitor_time")
+  @@map("checks")
+}
+
+model Incident {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  monitorId   String?   @map("monitor_id") @db.Uuid
+  startedAt   DateTime? @default(now()) @map("started_at") @db.Timestamp(6)
+  resolvedAt  DateTime? @map("resolved_at") @db.Timestamp(6)
+  isResolved  Boolean?  @default(false) @map("is_resolved")
+  alertStatus String?   @default("PENDING") @map("alert_status") @db.VarChar(20)
+  monitor     Monitor?  @relation(fields: [monitorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([monitorId, startedAt(sort: Desc)], map: "idx_incidents_monitor")
+  @@map("incidents")
+}
+
+model MonitorStats {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  monitorId         String?  @map("monitor_id") @db.Uuid
+  day               DateTime @db.Date
+  uptimePercentage  Decimal? @map("uptime_percentage") @db.Decimal(5, 2)
+  avgResponseTime   Int?     @map("avg_response_time")
+  totalChecks       Int?     @map("total_checks")
+  monitor           Monitor? @relation(fields: [monitorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([monitorId, day])
+  @@map("monitor_stats")
+}
+
+model Monitor {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId              String?        @map("user_id") @db.Uuid
+  name                String
+  url                 String
+  checkInterval       Int?           @default(5) @map("check_interval")
+  alertThreshold      Int?           @default(3) @map("alert_threshold")
+  isActive            Boolean?       @default(true) @map("is_active")
+  lastStatus          String?        @map("last_status")
+  lastChecked         DateTime?      @map("last_checked") @db.Timestamp(6)
+  consecutiveFailures Int?           @default(0) @map("consecutive_failures")
+  createdAt           DateTime?      @default(now()) @map("created_at") @db.Timestamp(6)
+  checks              Check[]
+  incidents           Incident[]
+  stats               MonitorStats[]
+  user                User?          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("monitors")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String    @unique
+  passwordHash String?   @map("password_hash")
+  clerkId      String?   @unique @map("clerk_id")
+  name         String?
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  refreshToken String?   @map("refresh_token")
+  monitors     Monitor[]
+
+  @@map("users")
+}
+
+model PgMigration {
+  id    Int      @id @default(autoincrement())
+  name  String   @db.VarChar(255)
+  runOn DateTime @map("run_on") @db.Timestamp(6)
+
+  @@map("pgmigrations")
+}
