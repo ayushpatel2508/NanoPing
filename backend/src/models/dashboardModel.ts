@@ -111,7 +111,7 @@ export const dashboardModel = {
             orderBy: { day: 'asc' }
         });
 
-        return stats.map(s => ({
+        return stats.map((s: any) => ({
             day: s.day,
             uptime_percentage: s.uptimePercentage ? Number(s.uptimePercentage) : null,
             avg_response_time: s.avgResponseTime,
@@ -236,7 +236,7 @@ export const dashboardModel = {
             ]
         });
 
-        return stats.map(s => ({
+        return stats.map((s: any) => ({
             monitor_id: s.monitorId,
             day: s.day,
             uptime_percentage: s.uptimePercentage ? Number(s.uptimePercentage) : null,
