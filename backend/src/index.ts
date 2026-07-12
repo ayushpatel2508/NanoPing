@@ -58,7 +58,7 @@ const server = app.listen(process.env.PORT, () => {
     const mode = process.env.NODE_ENV || 'development';
     console.log(` NanoPing Server is running on port ${process.env.PORT} in ${mode.toUpperCase()} mode`);
     console.log(` CORS origins allowed: ${Array.isArray(config.corsOrigins) ? config.corsOrigins.join(', ') : config.corsOrigins}`);
-    
+
     if (config.isProd) {
         console.log(" Production security features (Secure Cookies, Strict CORS) are ENABLED.");
     }

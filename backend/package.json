@@ -45,6 +45,7 @@
   "dependencies": {
     "@bull-board/api": "6.20.6",
     "@bull-board/express": "6.20.6",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.7.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.71.0",
