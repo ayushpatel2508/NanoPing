@@ -414,6 +414,12 @@ export default function MonitorDetail() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'analytics' | 'settings'>('overview');
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { socket } = useSocket(id);
 
@@ -422,6 +428,14 @@ export default function MonitorDetail() {
 
     socket.on('check:new', (newCheck: any) => {
       setChecks((prev) => [newCheck, ...prev]);
+      setMonitor((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          last_checked: newCheck.checked_at,
+          last_status: newCheck.status
+        };
+      });
     });
 
     socket.on('monitor:status_update', (data: any) => {
@@ -534,6 +548,15 @@ export default function MonitorDetail() {
   const uptimePercent = checks.length > 0 
     ? ((checks.filter(c => c.status === 'up').length / checks.length) * 100).toFixed(1)
     : '—';
+
+  const formatTimeSince = (dateString: string) => {
+    const diffSeconds = Math.floor((now - new Date(dateString).getTime()) / 1000);
+    if (diffSeconds < 0) return 'Just now';
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    const m = Math.floor(diffSeconds / 60);
+    const s = diffSeconds % 60;
+    return `${m}m ${s}s ago`;
+  };
 
   const TABS = [
     { id: 'overview', label: 'Live Network', icon: 'settings_input_antenna' },
@@ -660,7 +683,7 @@ export default function MonitorDetail() {
               </div>
               <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
                 <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Time Since Check</div>
-                <div className="text-white font-bold">{monitor.last_checked ? `${Math.floor((Date.now() - new Date(monitor.last_checked).getTime()) / 1000)}s ago` : 'Never'}</div>
+                <div className="text-white font-bold">{monitor.last_checked ? formatTimeSince(monitor.last_checked) : 'Never'}</div>
               </div>
               <div className="bg-[#1a1c23]/50 p-5 rounded-xl border border-white/[0.05] hover:bg-[#1a1c23] hover:-translate-y-1 transition-all duration-300 shadow-lg">
                 <div className="text-[11px] text-slate-500 mb-1 uppercase font-bold tracking-wider">Response Latency</div>

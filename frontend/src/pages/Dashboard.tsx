@@ -342,13 +342,13 @@ export default function Dashboard() {
                   <div className="relative">
                     <input type="text" inputMode="numeric" pattern="[0-9]*" value={form.check_interval || ''} onChange={(e) => setForm({ ...form, check_interval: parseInt(e.target.value) || 0 })}
                       className={`w-full bg-[#0f1115] border rounded-md px-4 py-2.5 text-white text-[13px] focus:outline-none transition-all ${
-                        (form.check_interval < 3 || form.check_interval > 60) ? 'border-red-500/40 focus:border-red-500' : 'border-white/[0.06] focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20'
+                        (form.check_interval < 1 || form.check_interval > 60) ? 'border-red-500/40 focus:border-red-500' : 'border-white/[0.06] focus:border-emerald-500/40 focus:ring-1 focus:ring-emerald-500/20'
                       }`}
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-600">min</span>
                   </div>
-                  {(form.check_interval < 3 || form.check_interval > 60) && (
-                    <span className="text-red-400 text-[11px] mt-1 block">3-60 minutes</span>
+                  {(form.check_interval < 1 || form.check_interval > 60) && (
+                    <span className="text-red-400 text-[11px] mt-1 block">1-60 minutes</span>
                   )}
                 </div>
                 <div>
@@ -373,11 +373,11 @@ export default function Dashboard() {
               <button
                 onClick={handleCreate}
                 className={`flex-1 font-semibold py-2.5 rounded-md text-[13px] transition-all ${
-                  (form.check_interval >= 3 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)
+                  (form.check_interval >= 1 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)
                   ? 'bg-emerald-500 hover:bg-emerald-400 text-[#0a0a0a] shadow-[0_2px_12px_rgba(16,185,129,0.25)] cursor-pointer active:scale-[0.97]'
                   : 'bg-white/[0.04] text-slate-600 cursor-not-allowed'
                 }`}
-                disabled={!(form.check_interval >= 3 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)}
+                disabled={!(form.check_interval >= 1 && form.check_interval <= 60 && form.alert_threshold >= 1 && form.alert_threshold <= 60)}
               >
                 Create Monitor
               </button>

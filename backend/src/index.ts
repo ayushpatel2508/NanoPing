@@ -23,6 +23,7 @@ import redisConnection from "./config/redis.js";
 import { initSocket } from "./config/socket.js";
 
 const app = express();
+app.set("trust proxy", 1); // Fixes Render X-Forwarded-For warning for rate limiter
 
 // Middleware
 app.use(cors({
