@@ -39,11 +39,12 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
   });
   await redisConnection.rpush('ping_logs_buffer', logEntry);
 
-  // Emit the new check to anyone listening to this monitor
+  // Emit the new check to all connected clients (Dashboard + MonitorDetail)
   try {
     const io = getIO();
-    io.to(`monitor-${monitorId}`).emit("check:new", {
+    io.emit("check:new", {
       monitorId,
+      monitor_id: monitorId,
       status,
       status_code: statusCode,
       response_time: responseTime,
@@ -80,19 +81,14 @@ export const pingWorker = new Worker("pings", async (job: Job) => {
       await redisConnection.del(failKey);
   }
 
-  // Emit status update to the room (and potentially a global dashboard room if we add one)
+  // Emit status update to all connected clients
   try {
     const io = getIO();
-    io.to(`monitor-${monitorId}`).emit("monitor:status_update", {
+    io.emit("monitor:status_update", {
       monitorId,
       last_status: lastStatus,
+      last_checked: checkedAt,
       consecutive_failures: consecutiveFailures
-    });
-    // Also emit to a general dashboard room if needed
-    io.emit("monitor:status_update", {
-        monitorId,
-        last_status: lastStatus,
-        consecutive_failures: consecutiveFailures
     });
   } catch (err) {}
 

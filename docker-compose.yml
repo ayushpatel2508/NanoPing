@@ -30,3 +30,22 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  backend:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    container_name: pinging-backend
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRE_USER}:${POSTGRE_PASSWORD}@db:5432/${POSTGRE_DB}
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    command: /bin/sh -c "npm install && npx prisma db push --accept-data-loss && npm run dev"

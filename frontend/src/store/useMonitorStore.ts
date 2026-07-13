@@ -108,7 +108,7 @@ export const useMonitorStore = create<MonitorState>((set, get) => ({
       if (!monitor) return {
         monitors: state.monitors.map((m) =>
           m.id === data.monitorId
-            ? { ...m, last_status: data.last_status, consecutive_failures: data.consecutive_failures }
+            ? { ...m, last_status: data.last_status, last_checked: data.last_checked, consecutive_failures: data.consecutive_failures }
             : m
         )
       };
@@ -129,7 +129,7 @@ export const useMonitorStore = create<MonitorState>((set, get) => ({
       return {
         monitors: state.monitors.map((m) =>
           m.id === data.monitorId
-            ? { ...m, last_status: newStatus, consecutive_failures: data.consecutive_failures }
+            ? { ...m, last_status: newStatus, last_checked: data.last_checked, consecutive_failures: data.consecutive_failures }
             : m
         ),
         summaryStats: newSummary

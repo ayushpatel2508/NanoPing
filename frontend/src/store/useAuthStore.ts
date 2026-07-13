@@ -47,7 +47,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await authApi.register(userData);
       if (response.status === 'success') {
-        set({ isLoading: false });
+        const user = response.data;
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user, isAuthenticated: true, isLoading: false });
         return true;
       }
       set({ error: response.message || 'Registration failed', isLoading: false });

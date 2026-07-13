@@ -15,7 +15,7 @@ export default function Signup() {
     clearError();
     const success = await register({ name, email, password });
     if (success) {
-      navigate('/signin');
+      navigate('/dashboard');
     }
   };
 

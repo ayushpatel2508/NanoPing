@@ -414,6 +414,7 @@ export default function MonitorDetail() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'analytics' | 'settings'>('overview');
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -506,7 +507,7 @@ export default function MonitorDetail() {
   };
 
   const handleDelete = async () => {
-    if (!id || !confirm('Delete this monitor permanently?')) return;
+    if (!id) return;
     try {
       await monitorApi.deleteMonitor(id);
       navigate('/dashboard');
@@ -636,7 +637,7 @@ export default function MonitorDetail() {
               <span className="hidden sm:inline">{monitor.is_active ? 'Pause' : 'Resume'}</span>
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteModal(true)}
               className="flex items-center gap-1.5 text-[12px] font-bold text-red-400 bg-red-500/10 hover:bg-red-500/15 px-3 py-1.5 rounded-md border border-red-500/10 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -792,7 +793,7 @@ export default function MonitorDetail() {
                   <button onClick={handleToggle} className="px-6 py-2 rounded-xl bg-white/5 border border-white/5 text-slate-300 font-bold hover:bg-white/10 transition-all">
                     {monitor.is_active ? 'Pause Monitor' : 'Resume Monitor'}
                   </button>
-                  <button onClick={handleDelete} className="px-6 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all">
+                  <button onClick={() => setShowDeleteModal(true)} className="px-6 py-2 rounded-xl bg-red-500/10 border border-red-500/10 text-red-500 font-bold hover:bg-red-500/20 transition-all">
                     Delete Monitor
                   </button>
                 </div>
@@ -802,6 +803,45 @@ export default function MonitorDetail() {
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setShowDeleteModal(false)}>
+          <div
+            className="bg-[#16181e] border border-white/[0.06] rounded-lg p-6 w-full max-w-sm shadow-2xl shadow-black/50 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                <span className="material-symbols-outlined text-2xl text-red-400">delete_forever</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white mb-1">Delete Monitor</h3>
+                <p className="text-[13px] text-slate-400 leading-relaxed">
+                  Are you sure you want to permanently delete <span className="text-white font-semibold">{monitor.name}</span>? This will remove all checks, incidents, and stats. This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-2">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 border border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.03] py-2.5 rounded-md text-[13px] font-medium transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setShowDeleteModal(false); handleDelete(); }}
+                  className="flex-1 bg-red-500 hover:bg-red-400 text-white font-semibold py-2.5 rounded-md text-[13px] transition-all shadow-[0_2px_12px_rgba(239,68,68,0.25)] active:scale-[0.97]"
+                >
+                  Delete Permanently
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
