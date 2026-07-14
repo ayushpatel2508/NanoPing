@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMonitorStore } from '../store/useMonitorStore';
 import { useSocket } from '../hooks/useSocket';
-import { dashboardApi } from '../api/dashboard';
+
 import { Skeleton } from 'boneyard-js/react';
 
 export default function Dashboard() {

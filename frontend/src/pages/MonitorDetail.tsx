@@ -1,16 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useMonitorStore } from '../store/useMonitorStore';
 import { useSocket } from '../hooks/useSocket';
 import { monitorApi } from '../api/monitors';
-import { dashboardApi } from '../api/dashboard';
-import { 
-    ResponseTimeChart, 
-    UptimeBarChart, 
-    StatusPieChart, 
-    HeartbeatTimeline,
-    formatDuration,
-    formatDate
+import {
+  ResponseTimeChart,
+  UptimeBarChart,
+  StatusPieChart,
+  HeartbeatTimeline,
+  formatDuration,
+  formatDate
 } from '../components/Charts';
 
 // ─── TIME RANGE LOG FILTER ────────────────────────────────────────
@@ -65,11 +63,10 @@ function LogsTab({ checks }: { checks: any[] }) {
               <button
                 key={opt.value}
                 onClick={() => handleRangeChange(opt.value)}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${
-                  timeRange === opt.value
+                className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-all ${timeRange === opt.value
                     ? 'bg-emerald-500/15 text-emerald-400 shadow-sm ring-1 ring-emerald-500/20'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                }`}
+                  }`}
               >
                 {opt.label}
               </button>
@@ -85,15 +82,14 @@ function LogsTab({ checks }: { checks: any[] }) {
               <button
                 key={s}
                 onClick={() => handleStatusChange(s)}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-medium capitalize transition-all ${
-                  statusFilter === s
+                className={`px-3 py-1.5 rounded-md text-[12px] font-medium capitalize transition-all ${statusFilter === s
                     ? s === 'up'
                       ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20'
                       : s === 'down'
-                      ? 'bg-red-500/15 text-red-400 ring-1 ring-red-500/20'
-                      : 'bg-white/10 text-white ring-1 ring-white/10'
+                        ? 'bg-red-500/15 text-red-400 ring-1 ring-red-500/20'
+                        : 'bg-white/10 text-white ring-1 ring-white/10'
                     : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                }`}
+                  }`}
               >
                 {s === 'all' ? 'All' : s === 'up' ? '✓ Up' : '✗ Down'}
               </button>
@@ -179,23 +175,21 @@ function LogsTab({ checks }: { checks: any[] }) {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2">
                         <span className={`w-1.5 h-1.5 rounded-full ${c.status === 'up' ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                        <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border ${
-                          c.status === 'up'
+                        <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border ${c.status === 'up'
                             ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
                             : 'text-red-400 bg-red-500/10 border-red-500/20'
-                        }`}>
+                          }`}>
                           {c.status}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className={`text-[13px] font-bold tabular-nums ${
-                        c.status_code >= 200 && c.status_code < 300
+                      <span className={`text-[13px] font-bold tabular-nums ${c.status_code >= 200 && c.status_code < 300
                           ? 'text-emerald-400'
                           : c.status_code >= 400
-                          ? 'text-red-400'
-                          : 'text-slate-400'
-                      }`}>
+                            ? 'text-red-400'
+                            : 'text-slate-400'
+                        }`}>
                         {c.status_code || '—'}
                       </span>
                     </td>
@@ -204,15 +198,13 @@ function LogsTab({ checks }: { checks: any[] }) {
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${
-                                c.response_time < 300 ? 'bg-emerald-500' : c.response_time < 800 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}
+                              className={`h-full rounded-full transition-all ${c.response_time < 300 ? 'bg-emerald-500' : c.response_time < 800 ? 'bg-amber-500' : 'bg-red-500'
+                                }`}
                               style={{ width: `${Math.min((c.response_time / 2000) * 100, 100)}%` }}
                             />
                           </div>
-                          <span className={`text-[13px] font-semibold tabular-nums ${
-                            c.response_time < 300 ? 'text-emerald-400' : c.response_time < 800 ? 'text-amber-400' : 'text-red-400'
-                          }`}>
+                          <span className={`text-[13px] font-semibold tabular-nums ${c.response_time < 300 ? 'text-emerald-400' : c.response_time < 800 ? 'text-amber-400' : 'text-red-400'
+                            }`}>
                             {c.response_time}ms
                           </span>
                         </div>
@@ -308,9 +300,8 @@ function AnalyticsTab({ stats, checks, incidents }: { stats: any[]; checks: any[
               <button
                 key={d}
                 onClick={() => setStatsDays(d)}
-                className={`px-3 py-1 rounded text-[11px] font-medium transition-all ${
-                  statsDays === d ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
-                }`}
+                className={`px-3 py-1 rounded text-[11px] font-medium transition-all ${statsDays === d ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20' : 'text-slate-500 hover:text-slate-300'
+                  }`}
               >
                 {d}d
               </button>
@@ -380,9 +371,8 @@ function AnalyticsTab({ stats, checks, incidents }: { stats: any[]; checks: any[
                 <div className={`w-2 h-2 rounded-full shrink-0 ${inc.is_resolved ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-sm mb-0.5">
-                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${
-                      inc.is_resolved ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'
-                    }`}>
+                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${inc.is_resolved ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'
+                      }`}>
                       {inc.is_resolved ? 'Resolved' : 'Ongoing'}
                     </span>
                   </div>
@@ -467,9 +457,9 @@ export default function MonitorDetail() {
     try {
       const res = await monitorApi.toggleStatus(id, !monitor.is_active);
       if (res.status === 'success') {
-         updateMonitorDetailCacheFromSocket('status', res.data);
+        updateMonitorDetailCacheFromSocket('status', res.data);
       }
-    } catch {}
+    } catch { }
   };
 
   const handleDelete = async () => {
@@ -477,7 +467,7 @@ export default function MonitorDetail() {
     try {
       await monitorApi.deleteMonitor(id);
       navigate('/dashboard');
-    } catch {}
+    } catch { }
   };
 
   if (isLoading && !cachedData) {
@@ -512,7 +502,7 @@ export default function MonitorDetail() {
     : '—';
 
   // For Stats Row in hero
-  const uptimePercent = checks.length > 0 
+  const uptimePercent = checks.length > 0
     ? ((checks.filter(c => c.status === 'up').length / checks.length) * 100).toFixed(1)
     : '—';
 
@@ -551,11 +541,10 @@ export default function MonitorDetail() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeTab === tab.id
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                   ? 'bg-emerald-500/15 text-emerald-400 shadow-sm border border-emerald-500/10'
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
+                }`}
             >
               <span className={`w-2 h-2 rounded-full ${activeTab === tab.id ? 'bg-emerald-400 animate-pulse' : 'bg-slate-700'}`}></span>
               {tab.label}
@@ -668,9 +657,8 @@ export default function MonitorDetail() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 py-2 rounded-lg text-[12px] font-medium capitalize transition-all ${
-                    activeTab === tab.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-500 hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-[12px] font-medium capitalize transition-all ${activeTab === tab.id ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-500 hover:text-white'
+                    }`}
                 >
                   {tab.label}
                 </button>
