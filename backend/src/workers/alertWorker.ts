@@ -1,6 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import redisConnection from "../config/redis.js";
-import  pool  from "../config/db.js";
+import pool from "../config/db.js";
 import { config } from "../config/env.js";
 
 import { sendEmail } from "../utils/sendEmail.js";
@@ -33,9 +33,9 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
     const safeUrl = escapeHtml(url);
 
     // 2. Construct the Email Templates
-    const subject = isDownAlert 
-        ? `🔴 URGENT: Your website ${url} is down!` 
-        : `🟢 RESOLVED: Your website ${url} is back up!`;
+    const subject = isDownAlert
+      ? `🔴 URGENT: Your website ${url} is down!`
+      : `🟢 RESOLVED: Your website ${url} is back up!`;
 
     const primaryColor = isDownAlert ? '#ef4444' : '#10b981';
     const statusLabel = isDownAlert ? 'OFFLINE' : 'ONLINE';
@@ -87,37 +87,19 @@ export const alertWorker = new Worker("alerts", async (job: Job) => {
   }
 }, { connection: redisConnection as any });
 
-//the moment when the job is picked from queue
-// alertWorker.on("active", async (job: Job) => {
-//    if (job.name === "send-down-alert") {
-//       await pool.query("UPDATE incidents SET alert_status = 'PROCESSING' WHERE id = $1", [job.data.incidentId]);
-//    }
-// });
-
-//the time when job is completed successfully
-// alertWorker.on("completed", async (job: Job) => {
-//    if (job.name === "send-down-alert") {
-      
-//    }
-// });
-
-//server crash
-//here job type undefined added cause somethimes server may crash when the job is not yet picked by worker
-//so in that case it has no job so we need to add undefied
-
 alertWorker.on("failed", async (job: Job | undefined, err: Error) => {
-   if (!job || job.name !== "send-down-alert") return;
+  if (!job || job.name !== "send-down-alert") return;
 
-   if (job.attemptsMade >= (job.opts.attempts || 5)) {
-     
-      console.log(`[AlertWorker DLQ] Email permanently failed for incident ${job.data.incidentId}. Database updated to FAILED.`);
-      await pool.query("UPDATE incidents SET alert_status = 'FAILED' WHERE id = $1", [job.data.incidentId]);
-   } else {
-      console.log(`[AlertWorker] SMTP transmission failed. Rolling back Database to PENDING for retry in 1 minute.`);
-      await pool.query("UPDATE incidents SET alert_status = 'PENDING' WHERE id = $1", [job.data.incidentId]);
-   }
+  if (job.attemptsMade >= (job.opts.attempts || 5)) {
+
+    console.log(`[AlertWorker DLQ] Email permanently failed for incident ${job.data.incidentId}. Database updated to FAILED.`);
+    await pool.query("UPDATE incidents SET alert_status = 'FAILED' WHERE id = $1", [job.data.incidentId]);
+  } else {
+    console.log(`[AlertWorker] SMTP transmission failed. Rolling back Database to PENDING for retry in 1 minute.`);
+    await pool.query("UPDATE incidents SET alert_status = 'PENDING' WHERE id = $1", [job.data.incidentId]);
+  }
 });
 
 alertWorker.on("error", (err) => {
-    console.error(`[AlertWorker Critical Error]:`, err);
+  console.error(`[AlertWorker Critical Error]:`, err);
 });

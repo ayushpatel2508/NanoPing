@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useMonitorStore } from '../store/useMonitorStore';
 import { useSocket } from '../hooks/useSocket';
 import { monitorApi } from '../api/monitors';
 import { dashboardApi } from '../api/dashboard';
@@ -408,12 +409,16 @@ export default function MonitorDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [monitor, setMonitor] = useState<any>(null);
-  const [checks, setChecks] = useState<any[]>([]);
-  const [stats, setStats] = useState<any[]>([]);
-  const [incidents, setIncidents] = useState<any[]>([]);
+  const { monitorDetailsCache, fetchMonitorDetail, updateMonitorDetailCacheFromSocket } = useMonitorStore();
+  const isLoading = useMonitorStore((s) => s.isLoading);
+
+  const cachedData = id ? monitorDetailsCache[id] : null;
+  const monitor = cachedData?.monitor || null;
+  const checks = cachedData?.checks || [];
+  const stats = cachedData?.stats || [];
+  const incidents = cachedData?.incidents || [];
+
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'analytics' | 'settings'>('overview');
-  const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [now, setNow] = useState(Date.now());
 
@@ -428,43 +433,19 @@ export default function MonitorDetail() {
     if (!socket) return;
 
     socket.on('check:new', (newCheck: any) => {
-      setChecks((prev) => [newCheck, ...prev]);
-      setMonitor((prev: any) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          last_checked: newCheck.checked_at,
-          last_status: newCheck.status
-        };
-      });
+      updateMonitorDetailCacheFromSocket('check', newCheck);
     });
 
     socket.on('monitor:status_update', (data: any) => {
-      setMonitor((prev: any) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          last_status: data.last_status,
-          consecutive_failures: data.consecutive_failures
-        };
-      });
+      updateMonitorDetailCacheFromSocket('status', data);
     });
 
     socket.on('incident:new', (newIncident: any) => {
-      setIncidents((prev) => [newIncident, ...prev]);
+      updateMonitorDetailCacheFromSocket('incident', newIncident);
     });
 
     socket.on('incident:resolved', (resolvedData: any) => {
-      setIncidents((prev) => prev.map(inc => 
-        inc.id === resolvedData.incidentId 
-          ? { 
-              ...inc, 
-              is_resolved: true, 
-              resolved_at: resolvedData.resolved_at,
-              duration_seconds: Math.floor((new Date(resolvedData.resolved_at).getTime() - new Date(inc.started_at).getTime()) / 1000)
-            } 
-          : inc
-      ));
+      updateMonitorDetailCacheFromSocket('resolve', resolvedData);
     });
 
     return () => {
@@ -473,36 +454,21 @@ export default function MonitorDetail() {
       socket.off('incident:new');
       socket.off('incident:resolved');
     };
-  }, [socket]);
+  }, [socket, updateMonitorDetailCacheFromSocket]);
 
   useEffect(() => {
-    if (!id) return;
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const [monRes, chkRes, stRes, incRes] = await Promise.all([
-          monitorApi.getMonitorDetails(id),
-           dashboardApi.getRecentChecks(id, 1500),
-          dashboardApi.getMonitorStats(id, 30),
-          dashboardApi.getIncidents(id, 50),
-        ]);
-        if (monRes.status === 'success') setMonitor(monRes.data);
-        if (chkRes.success) setChecks(chkRes.data);
-        if (stRes.success) setStats(stRes.data);
-        if (incRes.success) setIncidents(incRes.data);
-      } catch (err) {
-        console.error(err);
-      }
-      setLoading(false);
-    };
-    fetchAll();
-  }, [id]);
+    if (id) {
+      fetchMonitorDetail(id);
+    }
+  }, [id, fetchMonitorDetail]);
 
   const handleToggle = async () => {
     if (!monitor || !id) return;
     try {
       const res = await monitorApi.toggleStatus(id, !monitor.is_active);
-      if (res.status === 'success') setMonitor(res.data);
+      if (res.status === 'success') {
+         updateMonitorDetailCacheFromSocket('status', res.data);
+      }
     } catch {}
   };
 
@@ -514,7 +480,7 @@ export default function MonitorDetail() {
     } catch {}
   };
 
-  if (loading) {
+  if (isLoading && !cachedData) {
     return (
       <div className="min-h-screen bg-[#13151b] flex flex-col items-center justify-center gap-3">
         <span className="material-symbols-outlined text-4xl text-emerald-500 animate-spin">progress_activity</span>

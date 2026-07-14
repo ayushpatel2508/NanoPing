@@ -14,11 +14,13 @@ export default function Dashboard() {
     fetchMonitors,
     createMonitor,
     updateMonitorStatus,
+    dashboardChecksCache,
+    fetchDashboardChecksCache,
+    addDashboardCheckToCache
   } = useMonitorStore();
   const [showModal, setShowModal] = useState(false);
   const [formError, setFormError] = useState('');
   const [form, setForm] = useState({ name: '', url: '', check_interval: 5, alert_threshold: 3 });
-  const [checksCache, setChecksCache] = useState<Record<string, any[]>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | 'up' | 'down' | 'paused'>('all');
 
   const { socket } = useSocket();
@@ -28,13 +30,7 @@ export default function Dashboard() {
     if (!socket) return;
 
     socket.on('check:new', (data: any) => {
-      setChecksCache((prev) => {
-        const existing = prev[data.monitor_id] || [];
-        return {
-          ...prev,
-          [data.monitor_id]: [data, ...existing].slice(0, 20)
-        };
-      });
+      addDashboardCheckToCache(data.monitor_id, data);
     });
 
     socket.on('monitor:status_update', (data: any) => {
@@ -45,28 +41,17 @@ export default function Dashboard() {
       socket.off('check:new');
       socket.off('monitor:status_update');
     };
-  }, [socket, updateMonitorStatus]);
+  }, [socket, updateMonitorStatus, addDashboardCheckToCache]);
 
   useEffect(() => {
     fetchMonitors();
   }, [fetchMonitors]);
 
   useEffect(() => {
-    if (monitors.length === 0) return;
-    const fetchChecks = async () => {
-      const cache: Record<string, any[]> = {};
-      await Promise.all(
-        monitors.map(async (m: any) => {
-          try {
-            const res = await dashboardApi.getRecentChecks(m.id);
-            if (res.success) cache[m.id] = res.data.slice(0, 20);
-          } catch { }
-        })
-      );
-      setChecksCache(cache);
-    };
-    fetchChecks();
-  }, [monitors]);
+    if (monitors.length > 0) {
+      fetchDashboardChecksCache(monitors);
+    }
+  }, [monitors, fetchDashboardChecksCache]);
 
   const handleCreate = async () => {
     setFormError('');
@@ -236,7 +221,7 @@ export default function Dashboard() {
                   </tr>
                 ) : (
                   filteredMonitors.map((m: any) => {
-                    const checks = checksCache[m.id] || [];
+                    const checks = dashboardChecksCache[m.id] || [];
                     const uptime = checks.length > 0 ? ((checks.filter(c => c.status === 'up').length / checks.length) * 100).toFixed(1) : '--';
 
                     return (
