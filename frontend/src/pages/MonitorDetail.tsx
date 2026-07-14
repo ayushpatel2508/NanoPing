@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useMonitorStore } from '../store/useMonitorStore';
 import { useSocket } from '../hooks/useSocket';
 import { monitorApi } from '../api/monitors';
