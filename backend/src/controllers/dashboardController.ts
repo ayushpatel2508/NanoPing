@@ -125,6 +125,7 @@ export const getGlobalChecks = async (req: Request, res: Response) => {
             try {
                 const cachedData = await redisConnection.get(cacheKey);
                 if (cachedData) {
+                    res.setHeader('X-Cache', 'HIT');
                     return res.json(JSON.parse(cachedData));
                 }
             } catch (err) {
@@ -157,6 +158,7 @@ export const getGlobalChecks = async (req: Request, res: Response) => {
             }
         }
 
+        res.setHeader('X-Cache', 'MISS');
         res.json(responseData);
     } catch (error) {
         console.error("[Dashboard] getGlobalChecks error:", error);

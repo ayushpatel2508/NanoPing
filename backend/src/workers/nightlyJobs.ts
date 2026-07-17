@@ -1,4 +1,4 @@
-import pool from "../config/db.js";
+import prisma from "../config/prisma.js";
 
 // Cron Job 1: Runs Every Night at Midnight
 // Aggregates the last 24 hours of raw 'checks' data into one clean row in 'monitor_stats'
@@ -7,7 +7,7 @@ export const startNightlyAggregation = () => {
         console.log("[NightlyJob] Starting daily aggregation of monitor stats...");
         try {
             // Calculate yesterday's stats for every active monitor in one SQL query
-            await pool.query(`
+            await prisma.$executeRawUnsafe(`
                 INSERT INTO monitor_stats (monitor_id, day, uptime_percentage, avg_response_time, total_checks)
                 SELECT
                     monitor_id,
@@ -57,10 +57,10 @@ export const startDataPurge = () => {
     const runPurge = async () => {
         console.log("[PurgeJob] Starting data retention purge...");
         try {
-            const result = await pool.query(`
+            const deletedCount = await prisma.$executeRawUnsafe(`
                 DELETE FROM checks WHERE checked_at < NOW() - INTERVAL '7 days'
             `);
-            console.log(`[PurgeJob]  Purged ${result.rowCount} old check records.`);
+            console.log(`[PurgeJob]  Purged ${deletedCount} old check records.`);
         } catch (error) {
             console.error("[PurgeJob]  Purge failed:", error);
         }
@@ -81,6 +81,6 @@ export const startDataPurge = () => {
         console.log(`[PurgeJob] Data purge scheduled for 1:00 AM (in ${Math.round(msUntilOneAm / 60000)} mins).`);
     };
 
-    
+
     scheduleNextRun();
 };

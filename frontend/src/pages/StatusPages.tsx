@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMonitorStore } from '../store/useMonitorStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { dashboardApi } from '../api/dashboard';
 
 export default function StatusPages() {
   const navigate = useNavigate();
   const { monitors, fetchMonitors } = useMonitorStore();
+  const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    if (!user?.id) return;
+    const url = `${window.location.origin}/status/${user.id}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -43,9 +54,20 @@ export default function StatusPages() {
   return (
     <div className="p-6 lg:p-8 w-full">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white tracking-tight">Status Pages</h1>
-        <p className="text-slate-500 text-[13px] mt-0.5">Real-time operational status and 30-day uptime for all endpoints</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Status Pages</h1>
+          <p className="text-slate-500 text-[13px] mt-0.5">Real-time operational status and 30-day uptime for all endpoints</p>
+        </div>
+        <button
+          onClick={handleCopyLink}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[13px] font-semibold transition-all shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">
+            {copied ? 'check' : 'link'}
+          </span>
+          {copied ? 'Copied!' : 'Copy Public Link'}
+        </button>
       </div>
 
       {/* Overall Status Banner */}

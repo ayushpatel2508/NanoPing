@@ -10,7 +10,8 @@ const isProd = process.env.NODE_ENV === "production";
 const config = process.env.DATABASE_URL
     ? {
         connectionString: process.env.DATABASE_URL,
-        ssl: isProd ? { rejectUnauthorized: false } : false // NeonDB requires SSL in production
+        ssl: isProd ? { rejectUnauthorized: false } : false, // NeonDB requires SSL in production
+        max: isProd ? 50 : 20, // Dynamic pool size: 50 in prod, 20 in dev
     }
     : {
         host: process.env.POSTGRE_HOST,
@@ -18,7 +19,8 @@ const config = process.env.DATABASE_URL
         password: process.env.POSTGRE_PASSWORD,
         database: process.env.POSTGRE_DB,
         port: 5432,
-        ssl: isProd ? { rejectUnauthorized: false } : false
+        ssl: isProd ? { rejectUnauthorized: false } : false,
+        max: isProd ? 50 : 20, // Dynamic pool size: 50 in prod, 20 in dev
     };
 
 const pool = new Pool(config);
